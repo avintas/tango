@@ -39,6 +39,10 @@ export default function Home() {
           <div className="bg-red-500 text-white p-4 rounded-lg">
             Tailwind Test - This should be red with white text
           </div>
+          {/* Test commit hook */}
+          <div className="bg-green-500 text-white p-4 rounded-lg">
+            Husky + lint-staged working! 🎉
+          </div>
         </div>
       </div>
 
