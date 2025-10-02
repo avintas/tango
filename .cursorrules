@@ -1,0 +1,174 @@
+# Tango Project - Cursor Rules
+
+## Project Overview
+- Next.js 14.2.33 with App Router
+- TypeScript with strict mode
+- Tailwind CSS for styling
+- Catalyst UI Kit components
+- Husky + lint-staged for code quality
+- Prettier for code formatting
+
+## Code Style & Conventions
+
+### TypeScript
+- Use strict TypeScript practices
+- Prefer explicit types over `any`
+- Use interfaces for object shapes
+- Use type unions for component variants
+- Always type function parameters and return values
+
+### React/Next.js
+- Use functional components with hooks
+- Prefer server components when possible
+- Use proper Next.js patterns (App Router)
+- Implement proper error boundaries
+- Use React.forwardRef for reusable components
+- Prefer composition over inheritance
+
+### Styling
+- Use Tailwind CSS utility classes
+- Leverage Catalyst UI Kit components when possible
+- Use CSS custom properties for dynamic values
+- Implement responsive design with mobile-first approach
+- Use semantic color tokens (zinc, indigo, etc.)
+
+### Component Architecture
+- Keep components small and focused
+- Use proper prop typing with interfaces
+- Implement proper accessibility (ARIA, keyboard navigation)
+- Use clsx for conditional className logic
+- Export components as named exports
+
+### File Organization
+- Place components in `/components` directory
+- Use kebab-case for file names
+- Co-locate related files (component + types + styles)
+- Use barrel exports for clean imports
+
+## Code Quality Rules
+
+### Formatting
+- Use Prettier for consistent formatting
+- Single quotes for strings
+- Semicolons required
+- 2-space indentation
+- 80 character line width
+- Trailing commas for ES5
+
+### Linting
+- Fix ESLint errors before committing
+- Use Next.js ESLint config with Prettier integration
+- Avoid console.log in production code
+- Use proper error handling
+
+### Git Workflow
+- Use conventional commit messages
+- Ensure all files are formatted before commit
+- Run lint-staged hooks automatically
+- Keep commits focused and atomic
+
+### Commit Guidelines
+- Write clear, descriptive commit messages
+- Use conventional commits format (feat:, fix:, docs:, etc.)
+- Keep commits atomic and focused
+- Create feature branches for new work
+- Don't commit sensitive data or API keys
+- All code will be auto-formatted and checked before commit (via pre-commit hooks)
+
+### Pre-commit Quality Checks
+**What Gets Checked Before Commits:**
+1. **ESLint** - Catches code errors and enforces best practices
+2. **Prettier** - Formats code and fixes apostrophe/quote issues  
+3. **Type checking** - Ensures TypeScript types are correct
+
+**Pre-commit Will Automatically:**
+- Format all apostrophes and quotes correctly
+- Fix indentation and spacing
+- Catch common errors
+- Ensure consistent code style
+- Prevent improperly escaped characters from being committed
+
+## Performance Guidelines
+- Optimize images with Next.js Image component
+- Use dynamic imports for code splitting
+- Implement proper loading states
+- Use React.memo for expensive components when needed
+- Leverage Next.js built-in optimizations
+
+## Accessibility Standards
+- Use semantic HTML elements
+- Implement proper ARIA labels
+- Ensure keyboard navigation works
+- Maintain proper color contrast
+- Test with screen readers
+
+## Development Preferences
+- Ask for approval before making code changes
+- Provide direct answers without code when requested
+- Focus on modern React patterns
+- Prioritize developer experience
+- Document complex logic with comments
+
+## When Generating Code
+- Always follow these rules unless explicitly told otherwise
+- Ask for clarification if requirements are ambiguous
+- Suggest best practices and improvements when appropriate
+- Explain technical decisions when they're not obvious
+- Provide working, production-ready code
+- Include necessary imports and dependencies
+- Consider edge cases and error scenarios
+
+## Component Usage Examples
+
+### Catalyst Components
+```tsx
+// Button variants
+<Button color="indigo">Primary</Button>
+<Button outline>Outline</Button>
+<Button plain>Plain</Button>
+
+// Form components
+<Input placeholder="Enter text..." />
+<Textarea placeholder="Enter message..." />
+<Select>...</Select>
+```
+
+### Tailwind Patterns
+```tsx
+// Responsive design
+<div className="flex flex-col md:flex-row gap-4">
+
+// Conditional styling
+<button className={clsx(
+  'base-styles',
+  isActive && 'active-styles',
+  variant === 'primary' && 'primary-styles'
+)}>
+```
+
+## Environment & Configuration
+- Use .env.local for development secrets
+- Prefix client-side env vars with NEXT_PUBLIC_
+- Keep configuration files clean and documented
+- Use TypeScript for config files when possible
+
+### Environment Variables
+- Store sensitive data in `.env.local`
+- Use `NEXT_PUBLIC_` prefix for client-side variables
+- Never commit `.env.local` to version control
+- Document required environment variables in README
+
+## Testing Philosophy
+- Write tests for complex business logic
+- Test user interactions, not implementation details
+- Use proper test data and mocking
+- Focus on accessibility testing
+
+## Documentation
+- Keep README up to date with setup instructions
+- Document complex logic and business rules
+- Add JSDoc comments for public APIs and complex functions
+- Maintain a CHANGELOG for significant updates
+- Comment complex algorithms and business logic
+- Document component props and usage examples
+- Maintain clear commit messages
