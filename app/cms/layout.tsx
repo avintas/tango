@@ -5,5 +5,5 @@ export default function CMSLayoutWrapper({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell title="Tango CMS">{children}</AppShell>;
+  return <AppShell title="Tango">{children}</AppShell>;
 }

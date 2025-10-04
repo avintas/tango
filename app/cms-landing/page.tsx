@@ -7,10 +7,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import SupabaseStatus from '@/components/supabase-status';
 import SupabaseTestButton from '@/components/supabase-test-button';
+import GeminiTest from '@/components/gemini-test';
 
 const navigation = [
   { name: 'Dashboard', href: '/cms' },
   { name: 'Content Editor', href: '/cms/content' },
+  { name: 'Source Creator', href: '/cms/source' },
   { name: 'Content Library', href: '/cms/content/list' },
   { name: 'Media Library', href: '/cms/media' },
   { name: 'Categories', href: '/cms/categories' },
@@ -179,17 +181,25 @@ export default function CMSLanding() {
                   </h3>
                   <SupabaseTestButton />
                 </div>
+
+                {/* Gemini API Test */}
+                <div className="mt-12">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    Gemini API Test Suite
+                  </h3>
+                  <GeminiTest />
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div className="bg-gray-50 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 dark:bg-gray-800">
+        <div className="bg-gray-50 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 dark:bg-gray-800 flex items-center justify-center">
           <Image
             alt="Hockey player in action"
             src="/gims/gim-101.webp"
-            className="aspect-3/2 object-cover lg:aspect-auto lg:size-full"
-            width={800}
-            height={600}
+            className="aspect-3/2 object-cover lg:aspect-auto lg:w-full lg:h-auto lg:max-h-full"
+            width={600}
+            height={400}
             priority
           />
         </div>

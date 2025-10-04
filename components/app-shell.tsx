@@ -5,10 +5,6 @@ import {
   Dialog,
   DialogBackdrop,
   DialogPanel,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
   TransitionChild,
 } from '@headlessui/react';
 import {
@@ -23,18 +19,18 @@ import {
   XMarkIcon,
   Cog6ToothIcon,
   ChartBarIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
-import {
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/react/20/solid';
+import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
+import { useSystemStatus } from '@/lib/hooks/use-system-status';
 
 const navigation = [
   { name: 'Dashboard', href: '/cms', icon: HomeIcon },
   { name: 'Content Editor', href: '/cms/content', icon: DocumentTextIcon },
+  { name: 'Source Creator', href: '/cms/source', icon: ClipboardDocumentIcon },
   { name: 'Content Library', href: '/cms/content/list', icon: FolderIcon },
   { name: 'Media Library', href: '/cms/media', icon: PhotoIcon },
   { name: 'Categories', href: '/cms/categories', icon: TagIcon },
@@ -44,15 +40,14 @@ const navigation = [
 
 const quickActions = [
   { id: 1, name: 'Create Content', href: '/cms/content', initial: 'C' },
-  { id: 2, name: 'View Landing', href: '/cms-landing', initial: 'L' },
-  { id: 3, name: 'Home Page', href: '/', initial: 'H' },
+  { id: 2, name: 'Source Creator', href: '/cms/source', initial: 'S' },
+  { id: 3, name: 'View Landing', href: '/cms-landing', initial: 'L' },
+  { id: 4, name: 'Home Page', href: '/', initial: 'H' },
 ];
 
-const userNavigation = [
-  { name: 'Your profile', href: '/cms/profile' },
-  { name: 'Settings', href: '/cms/settings' },
-  { name: 'Sign out', href: '/logout' },
-];
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(' ');
+}
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -65,6 +60,7 @@ export default function AppShell({
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const systemStatus = useSystemStatus();
 
   return (
     <>
@@ -100,8 +96,8 @@ export default function AppShell({
                 </div>
               </TransitionChild>
 
-              {/* Mobile sidebar */}
-              <div className="relative flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4 ring-1 ring-white/10">
+              {/* Mobile Sidebar */}
+              <div className="relative flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-2 ring-1 ring-white/10">
                 <div className="relative flex h-16 shrink-0 items-center">
                   <div className="flex items-center space-x-2">
                     <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -112,30 +108,33 @@ export default function AppShell({
                     </span>
                   </div>
                 </div>
-                <nav className="relative flex flex-1 flex-col">
+                <nav className="flex flex-1 flex-col">
                   <ul role="list" className="flex flex-1 flex-col gap-y-7">
                     <li>
                       <ul role="list" className="-mx-2 space-y-1">
-                        {navigation.map(item => (
-                          <li key={item.name}>
-                            <Link
-                              href={item.href}
-                              className={clsx(
-                                pathname === item.href
-                                  ? 'bg-white/5 text-white'
-                                  : 'text-gray-400 hover:bg-white/5 hover:text-white',
-                                'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold'
-                              )}
-                              onClick={() => setSidebarOpen(false)}
-                            >
-                              <item.icon
-                                aria-hidden="true"
-                                className="size-6 shrink-0"
-                              />
-                              {item.name}
-                            </Link>
-                          </li>
-                        ))}
+                        {navigation.map(item => {
+                          const isActive = pathname === item.href;
+                          return (
+                            <li key={item.name}>
+                              <Link
+                                href={item.href}
+                                className={classNames(
+                                  isActive
+                                    ? 'bg-white/5 text-white'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white',
+                                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold'
+                                )}
+                                onClick={() => setSidebarOpen(false)}
+                              >
+                                <item.icon
+                                  aria-hidden="true"
+                                  className="size-6 shrink-0"
+                                />
+                                {item.name}
+                              </Link>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </li>
                     <li>
@@ -147,10 +146,10 @@ export default function AppShell({
                           <li key={action.name}>
                             <Link
                               href={action.href}
-                              className="text-gray-400 hover:bg-white/5 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold"
+                              className="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
                               onClick={() => setSidebarOpen(false)}
                             >
-                              <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[0.625rem] font-medium text-gray-400 group-hover:border-white/20 group-hover:text-white">
+                              <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:border-white/20 group-hover:text-white">
                                 {action.initial}
                               </span>
                               <span className="truncate">{action.name}</span>
@@ -159,17 +158,82 @@ export default function AppShell({
                         ))}
                       </ul>
                     </li>
-                    <li className="mt-auto">
+
+                    {/* System Status */}
+                    <li className="mt-6 pt-4 border-t border-white/10">
+                      <div className="px-2 py-3 space-y-3">
+                        <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                          System Status
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <span className="text-xs text-gray-300">
+                              DB: Connected
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                systemStatus.loading
+                                  ? 'bg-yellow-400'
+                                  : systemStatus.apiConfigured
+                                    ? 'bg-blue-400'
+                                    : 'bg-red-400'
+                              }`}
+                            ></div>
+                            <span className="text-xs text-gray-300">
+                              API:{' '}
+                              {systemStatus.loading
+                                ? 'Checking...'
+                                : systemStatus.apiConfigured
+                                  ? 'Configured'
+                                  : 'Not configured'}
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-gray-300">
+                            Source items:{' '}
+                            {systemStatus.loading
+                              ? '...'
+                              : systemStatus.sourceItemsCount}
+                          </div>
+
+                          <div className="text-xs text-gray-300">
+                            Trivia sets:{' '}
+                            {systemStatus.loading
+                              ? '...'
+                              : systemStatus.triviaSetsCount}
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+
+                    <li className="-mx-6 mt-auto">
+                      <div className="flex items-center gap-x-4 px-6 py-3">
+                        <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                          <span className="text-sm font-medium text-white">
+                            A
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-white">
+                            Admin
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            admin@tango.com
+                          </span>
+                        </div>
+                      </div>
                       <Link
                         href="/cms/settings"
-                        className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+                        className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-white/5"
                         onClick={() => setSidebarOpen(false)}
                       >
-                        <Cog6ToothIcon
-                          aria-hidden="true"
-                          className="size-6 shrink-0"
-                        />
-                        Settings
+                        <Cog6ToothIcon className="size-6 shrink-0" />
+                        <span>Settings</span>
                       </Link>
                     </li>
                   </ul>
@@ -179,11 +243,11 @@ export default function AppShell({
           </div>
         </Dialog>
 
-        {/* Desktop sidebar */}
-        <div className="hidden bg-gray-900 ring-1 ring-white/10 lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-          <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-black/10 px-6 pb-4">
+        {/* Static sidebar for desktop */}
+        <div className="hidden bg-gray-900 lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+          <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 px-6">
             <div className="flex h-16 shrink-0 items-center">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
                 <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">T</span>
                 </div>
@@ -194,25 +258,28 @@ export default function AppShell({
               <ul role="list" className="flex flex-1 flex-col gap-y-7">
                 <li>
                   <ul role="list" className="-mx-2 space-y-1">
-                    {navigation.map(item => (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          className={clsx(
-                            pathname === item.href
-                              ? 'bg-white/5 text-white'
-                              : 'text-gray-400 hover:bg-white/5 hover:text-white',
-                            'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold'
-                          )}
-                        >
-                          <item.icon
-                            aria-hidden="true"
-                            className="size-6 shrink-0"
-                          />
-                          {item.name}
-                        </Link>
-                      </li>
-                    ))}
+                    {navigation.map(item => {
+                      const isActive = pathname === item.href;
+                      return (
+                        <li key={item.name}>
+                          <Link
+                            href={item.href}
+                            className={classNames(
+                              isActive
+                                ? 'bg-white/5 text-white'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white',
+                              'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold'
+                            )}
+                          >
+                            <item.icon
+                              aria-hidden="true"
+                              className="size-6 shrink-0"
+                            />
+                            {item.name}
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </li>
                 <li>
@@ -224,9 +291,9 @@ export default function AppShell({
                       <li key={action.name}>
                         <Link
                           href={action.href}
-                          className="text-gray-400 hover:bg-white/5 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold"
+                          className="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
                         >
-                          <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[0.625rem] font-medium text-gray-400 group-hover:border-white/20 group-hover:text-white">
+                          <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">
                             {action.initial}
                           </span>
                           <span className="truncate">{action.name}</span>
@@ -235,16 +302,79 @@ export default function AppShell({
                     ))}
                   </ul>
                 </li>
-                <li className="mt-auto">
+
+                {/* System Status */}
+                <li className="mt-6 pt-4 border-t border-white/10">
+                  <div className="px-2 py-3 space-y-3">
+                    <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                      System Status
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span className="text-xs text-gray-300">
+                          DB: Connected
+                        </span>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            systemStatus.loading
+                              ? 'bg-yellow-400'
+                              : systemStatus.apiConfigured
+                                ? 'bg-blue-400'
+                                : 'bg-red-400'
+                          }`}
+                        ></div>
+                        <span className="text-xs text-gray-300">
+                          API:{' '}
+                          {systemStatus.loading
+                            ? 'Checking...'
+                            : systemStatus.apiConfigured
+                              ? 'Configured'
+                              : 'Not configured'}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-gray-300">
+                        Source items:{' '}
+                        {systemStatus.loading
+                          ? '...'
+                          : systemStatus.sourceItemsCount}
+                      </div>
+
+                      <div className="text-xs text-gray-300">
+                        Trivia sets:{' '}
+                        {systemStatus.loading
+                          ? '...'
+                          : systemStatus.triviaSetsCount}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+
+                <li className="-mx-6 mt-auto">
+                  <div className="flex items-center gap-x-4 px-6 py-3">
+                    <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                      <span className="text-sm font-medium text-white">A</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-white">
+                        Admin
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        admin@tango.com
+                      </span>
+                    </div>
+                  </div>
                   <Link
                     href="/cms/settings"
-                    className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+                    className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-white/5"
                   >
-                    <Cog6ToothIcon
-                      aria-hidden="true"
-                      className="size-6 shrink-0"
-                    />
-                    Settings
+                    <Cog6ToothIcon className="size-6 shrink-0" />
+                    <span>Settings</span>
                   </Link>
                 </li>
               </ul>
@@ -252,96 +382,42 @@ export default function AppShell({
           </div>
         </div>
 
-        <div className="lg:pl-72">
-          <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-8 dark:border-white/10 dark:bg-gray-900">
+        {/* Mobile header */}
+        <div className="sticky top-0 z-40 flex items-center gap-x-6 bg-gray-900 px-4 py-4 shadow-sm sm:px-6 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="-m-2.5 p-2.5 text-gray-400 hover:text-white lg:hidden"
+          >
+            <span className="sr-only">Open sidebar</span>
+            <Bars3Icon aria-hidden="true" className="size-6" />
+          </button>
+          <div className="flex-1 text-sm/6 font-semibold text-white">
+            {title}
+          </div>
+          <div className="flex items-center gap-x-4">
             <button
               type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="-m-2.5 p-2.5 text-gray-700 hover:text-gray-900 lg:hidden dark:text-gray-400 dark:hover:text-white"
+              className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500"
             >
-              <span className="sr-only">Open sidebar</span>
-              <Bars3Icon aria-hidden="true" className="size-6" />
+              <span className="sr-only">View notifications</span>
+              <BellIcon aria-hidden="true" className="size-6" />
             </button>
-
-            {/* Separator */}
-            <div
-              aria-hidden="true"
-              className="h-6 w-px bg-gray-900/10 lg:hidden dark:bg-white/10"
-            />
-
-            <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-              <form action="#" method="GET" className="grid flex-1 grid-cols-1">
-                <input
-                  name="search"
-                  placeholder="Search content..."
-                  aria-label="Search"
-                  className="col-start-1 row-start-1 block size-full bg-white pl-8 text-base text-gray-900 outline-hidden placeholder:text-gray-400 sm:text-sm/6 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500"
-                />
-                <MagnifyingGlassIcon
-                  aria-hidden="true"
-                  className="pointer-events-none col-start-1 row-start-1 size-5 self-center text-gray-400"
-                />
-              </form>
-              <div className="flex items-center gap-x-4 lg:gap-x-6">
-                <button
-                  type="button"
-                  className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300"
-                >
-                  <span className="sr-only">View notifications</span>
-                  <BellIcon aria-hidden="true" className="size-6" />
-                </button>
-
-                {/* Separator */}
-                <div
-                  aria-hidden="true"
-                  className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-900/10 dark:lg:bg-gray-100/10"
-                />
-
-                {/* Profile dropdown */}
-                <Menu as="div" className="relative">
-                  <MenuButton className="relative flex items-center">
-                    <span className="absolute -inset-1.5" />
-                    <span className="sr-only">Open user menu</span>
-                    <div className="size-8 rounded-full bg-indigo-600 flex items-center justify-center outline -outline-offset-1 outline-black/5 dark:outline-white/10">
-                      <span className="text-white font-bold text-sm">A</span>
-                    </div>
-                    <span className="hidden lg:flex lg:items-center">
-                      <span
-                        aria-hidden="true"
-                        className="ml-4 text-sm/6 font-semibold text-gray-900 dark:text-white"
-                      >
-                        Admin User
-                      </span>
-                      <ChevronDownIcon
-                        aria-hidden="true"
-                        className="ml-2 size-5 text-gray-400 dark:text-gray-500"
-                      />
-                    </span>
-                  </MenuButton>
-                  <MenuItems
-                    transition
-                    className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg outline outline-gray-900/5 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in dark:bg-gray-800 dark:shadow-none dark:-outline-offset-1 dark:outline-white/10"
-                  >
-                    {userNavigation.map(item => (
-                      <MenuItem key={item.name}>
-                        <Link
-                          href={item.href}
-                          className="block px-3 py-1 text-sm/6 text-gray-900 data-focus:bg-gray-50 data-focus:outline-hidden dark:text-white dark:data-focus:bg-white/5"
-                        >
-                          {item.name}
-                        </Link>
-                      </MenuItem>
-                    ))}
-                  </MenuItems>
-                </Menu>
+            <div className="flex items-center gap-x-3">
+              <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center">
+                <span className="text-sm font-medium text-white">A</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white">Admin</span>
+                <span className="text-xs text-gray-400">admin@tango.com</span>
               </div>
             </div>
           </div>
-
-          <main className="py-10">
-            <div className="px-4 sm:px-6 lg:px-8">{children}</div>
-          </main>
         </div>
+
+        <main className="py-10 lg:pl-72">
+          <div className="px-4 sm:px-6 lg:px-8">{children}</div>
+        </main>
       </div>
     </>
   );
