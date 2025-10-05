@@ -6,6 +6,94 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // Get the generative model (Gemini Pro)
 const model = genAI.getGenerativeModel({ model: 'gemini-pro-latest' });
 
+// Configuration for content type prompts and structures
+const CONTENT_TYPE_CONFIG = {
+  trivia_questions: {
+    example: `[
+  {
+    "question": "What is the question?",
+    "correct_answer": "The correct answer",
+    "incorrect_answers": ["Wrong answer 1", "Wrong answer 2", "Wrong answer 3"],
+    "difficulty": "easy|medium|hard",
+    "category": "Players|Teams|Rules|History|Achievements",
+    "explanation": "Optional brief explanation"
+  }
+]`,
+  },
+  factoids: {
+    example: `[
+  {
+    "fact": "Interesting hockey fact",
+    "category": "Players|Teams|Rules|History|Achievements",
+    "source": "Optional source information",
+    "difficulty": "easy|medium|hard"
+  }
+]`,
+  },
+  quotes: {
+    example: `[
+  {
+    "quote": "The actual quote",
+    "speaker": "Who said it",
+    "context": "When/where it was said",
+    "category": "Players|Teams|Rules|History|Achievements"
+  }
+]`,
+  },
+  statistics: {
+    example: `[
+  {
+    "statistic": "What the stat measures",
+    "value": "The actual number/value",
+    "context": "Additional context about the stat",
+    "category": "Players|Teams|Rules|History|Achievements"
+  }
+]`,
+  },
+  stories: {
+    example: `[
+  {
+    "title": "Story title",
+    "story": "The full story narrative",
+    "category": "Players|Teams|Rules|History|Achievements",
+    "key_points": ["Key point 1", "Key point 2", "Key point 3"]
+  }
+]`,
+  },
+  rules: {
+    example: `[
+  {
+    "rule": "The rule name",
+    "explanation": "Detailed explanation of the rule",
+    "examples": ["Example 1", "Example 2", "Example 3"],
+    "category": "Players|Teams|Rules|History|Achievements"
+  }
+]`,
+  },
+  achievements: {
+    example: `[
+  {
+    "achievement": "What was achieved",
+    "player_or_team": "Who achieved it",
+    "year": "When it happened",
+    "context": "Additional context",
+    "category": "Players|Teams|Rules|History|Achievements"
+  }
+]`,
+  },
+  history: {
+    example: `[
+  {
+    "event": "What happened",
+    "date": "When it happened",
+    "significance": "Why it matters",
+    "details": "Additional details",
+    "category": "Players|Teams|Rules|History|Achievements"
+  }
+]`,
+  },
+} as const;
+
 export interface TriviaQuestion {
   question: string;
   correct_answer: string;
@@ -85,12 +173,12 @@ export interface ContentGenerationResult {
 }
 
 /**
- * Generate content based on type from hockey content
+ * Centralized helper function for calling Gemini API and parsing responses
  */
-export async function generateContent(
-  content: string,
+async function _callGeminiAndParse(
+  prompt: string,
   contentType: ContentType,
-  numItems: number = 5
+  validateStructure?: (content: any[]) => boolean
 ): Promise<ContentGenerationResult> {
   const startTime = performance.now();
 
@@ -99,14 +187,6 @@ export async function generateContent(
     if (!process.env.GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY environment variable is not set');
     }
-
-    // Validate content
-    if (!content.trim()) {
-      throw new Error('Content is required for content generation');
-    }
-
-    // Get the appropriate prompt based on content type
-    const prompt = getPromptForContentType(contentType, content, numItems);
 
     // Generate content using Gemini
     const result = await model.generateContent(prompt);
@@ -129,6 +209,11 @@ export async function generateContent(
     // Validate the response structure
     if (!Array.isArray(generatedContent)) {
       throw new Error('Gemini response is not an array');
+    }
+
+    // Run custom validation if provided
+    if (validateStructure && !validateStructure(generatedContent)) {
+      throw new Error('Generated content does not match expected structure');
     }
 
     const endTime = performance.now();
@@ -155,6 +240,45 @@ export async function generateContent(
 }
 
 /**
+ * Generate content based on type from hockey content
+ */
+export async function generateContent(
+  content: string,
+  contentType: ContentType,
+  numItems: number = 5
+): Promise<ContentGenerationResult> {
+  // Validate content
+  if (!content.trim()) {
+    return {
+      success: false,
+      content: [],
+      contentType,
+      error: 'Content is required for content generation',
+      processingTime: 0,
+    };
+  }
+
+  // Get the appropriate prompt based on content type
+  const prompt = getPromptForContentType(contentType, content, numItems);
+
+  // Add validation for trivia questions (more strict validation)
+  const validateStructure =
+    contentType === 'trivia_questions'
+      ? (generatedContent: any[]) => {
+          return generatedContent.every(
+            item =>
+              item.question &&
+              item.correct_answer &&
+              Array.isArray(item.incorrect_answers) &&
+              item.incorrect_answers.length === 3
+          );
+        }
+      : undefined;
+
+  return _callGeminiAndParse(prompt, contentType, validateStructure);
+}
+
+/**
  * Get prompt for specific content type
  */
 function getPromptForContentType(
@@ -162,6 +286,11 @@ function getPromptForContentType(
   content: string,
   numItems: number
 ): string {
+  const config = CONTENT_TYPE_CONFIG[contentType];
+  if (!config) {
+    throw new Error(`Unknown content type: ${contentType}`);
+  }
+
   const basePrompt = `You are a hockey content expert creating ${contentType.replace('_', ' ')} for Onlyhockey.com.
 
 Generate ${numItems} items based on this hockey content:
@@ -176,208 +305,24 @@ Requirements:
 
 Return ONLY a valid JSON array with this exact structure:`;
 
-  switch (contentType) {
-    case 'trivia_questions':
-      return `${basePrompt}
-[
-  {
-    "question": "What is the question?",
-    "correct_answer": "The correct answer",
-    "incorrect_answers": ["Wrong answer 1", "Wrong answer 2", "Wrong answer 3"],
-    "difficulty": "easy|medium|hard",
-    "category": "Players|Teams|Rules|History|Achievements",
-    "explanation": "Optional brief explanation"
-  }
-]`;
+  return `${basePrompt}
+${config.example}
 
-    case 'factoids':
-      return `${basePrompt}
-[
-  {
-    "fact": "Interesting hockey fact",
-    "category": "Players|Teams|Rules|History|Achievements",
-    "source": "Optional source information",
-    "difficulty": "easy|medium|hard"
-  }
-]`;
-
-    case 'quotes':
-      return `${basePrompt}
-[
-  {
-    "quote": "The actual quote",
-    "speaker": "Who said it",
-    "context": "When/where it was said",
-    "category": "Players|Teams|Rules|History|Achievements"
-  }
-]`;
-
-    case 'statistics':
-      return `${basePrompt}
-[
-  {
-    "statistic": "What the stat measures",
-    "value": "The actual number/value",
-    "context": "Additional context about the stat",
-    "category": "Players|Teams|Rules|History|Achievements"
-  }
-]`;
-
-    case 'stories':
-      return `${basePrompt}
-[
-  {
-    "title": "Story title",
-    "story": "The full story narrative",
-    "category": "Players|Teams|Rules|History|Achievements",
-    "key_points": ["Key point 1", "Key point 2", "Key point 3"]
-  }
-]`;
-
-    case 'rules':
-      return `${basePrompt}
-[
-  {
-    "rule": "The rule name",
-    "explanation": "Detailed explanation of the rule",
-    "examples": ["Example 1", "Example 2", "Example 3"],
-    "category": "Players|Teams|Rules|History|Achievements"
-  }
-]`;
-
-    case 'achievements':
-      return `${basePrompt}
-[
-  {
-    "achievement": "What was achieved",
-    "player_or_team": "Who achieved it",
-    "year": "When it happened",
-    "context": "Additional context",
-    "category": "Players|Teams|Rules|History|Achievements"
-  }
-]`;
-
-    case 'history':
-      return `${basePrompt}
-[
-  {
-    "event": "What happened",
-    "date": "When it happened",
-    "significance": "Why it matters",
-    "details": "Additional details",
-    "category": "Players|Teams|Rules|History|Achievements"
-  }
-]`;
-
-    default:
-      throw new Error(`Unknown content type: ${contentType}`);
-  }
+Important: Return ONLY the JSON array, no other text or formatting.`;
 }
 
 /**
- * Generate trivia questions from hockey content (legacy function)
+ * Generate trivia questions from hockey content (legacy function - use generateContent instead)
+ * @deprecated Use generateContent(content, 'trivia_questions', numQuestions) instead
  */
 export async function generateTriviaQuestions(
   content: string,
   numQuestions: number = 5
-): Promise<TriviaGenerationResult> {
-  const startTime = performance.now();
-
-  try {
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY environment variable is not set');
-    }
-
-    // Validate content
-    if (!content.trim()) {
-      throw new Error('Content is required for trivia generation');
-    }
-
-    // Create the prompt for trivia generation
-    const prompt = `
-You are a hockey trivia expert creating questions for Onlyhockey.com. 
-
-Generate ${numQuestions} trivia questions based on this hockey content:
-
-${content}
-
-Requirements:
-1. Create questions that test knowledge, not just memory
-2. Make questions engaging and educational
-3. Include a mix of easy, medium, and hard difficulty
-4. Focus on interesting facts, player achievements, team history, rules, or memorable moments
-5. Ensure incorrect answers are plausible but clearly wrong
-6. Provide brief explanations when helpful
-
-Return ONLY a valid JSON array with this exact structure:
-[
-  {
-    "question": "What is the question?",
-    "correct_answer": "The correct answer",
-    "incorrect_answers": ["Wrong answer 1", "Wrong answer 2", "Wrong answer 3"],
-    "difficulty": "easy|medium|hard",
-    "category": "Players|Teams|Rules|History|Achievements",
-    "explanation": "Optional brief explanation"
-  }
-]
-
-Important: Return ONLY the JSON array, no other text or formatting.`;
-
-    // Generate content using Gemini
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Parse the JSON response
-    let questions: TriviaQuestion[];
-    try {
-      // Clean up the response text (remove any markdown formatting)
-      const cleanedText = text
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
-      questions = JSON.parse(cleanedText);
-    } catch (parseError) {
-      throw new Error(`Failed to parse Gemini response as JSON: ${parseError}`);
-    }
-
-    // Validate the response structure
-    if (!Array.isArray(questions)) {
-      throw new Error('Gemini response is not an array');
-    }
-
-    // Validate each question
-    for (const question of questions) {
-      if (
-        !question.question ||
-        !question.correct_answer ||
-        !Array.isArray(question.incorrect_answers) ||
-        question.incorrect_answers.length !== 3
-      ) {
-        throw new Error('Invalid question structure in Gemini response');
-      }
-    }
-
-    const endTime = performance.now();
-    const processingTime = Math.round(endTime - startTime);
-
-    return {
-      success: true,
-      questions,
-      processingTime,
-    };
-  } catch (error) {
-    const endTime = performance.now();
-    const processingTime = Math.round(endTime - startTime);
-
-    return {
-      success: false,
-      questions: [],
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-      processingTime,
-    };
-  }
+): Promise<ContentGenerationResult> {
+  console.warn(
+    'generateTriviaQuestions is deprecated. Use generateContent(content, "trivia_questions", numQuestions) instead.'
+  );
+  return generateContent(content, 'trivia_questions', numQuestions);
 }
 
 /**
@@ -387,6 +332,8 @@ export async function testGeminiConnection(): Promise<{
   success: boolean;
   error?: string;
 }> {
+  const testPrompt = 'Say "Hello, Gemini API is working!" and nothing else.';
+
   try {
     if (!process.env.GEMINI_API_KEY) {
       return {
@@ -396,9 +343,7 @@ export async function testGeminiConnection(): Promise<{
     }
 
     // Simple test prompt
-    const result = await model.generateContent(
-      'Say "Hello, Gemini API is working!" and nothing else.'
-    );
+    const result = await model.generateContent(testPrompt);
     const response = await result.response;
     const text = response.text();
 
@@ -424,12 +369,14 @@ export async function analyzeContent(content: string): Promise<{
   suggestions?: string[];
   error?: string;
 }> {
-  try {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY environment variable is not set');
-    }
+  if (!content.trim()) {
+    return {
+      success: false,
+      error: 'Content is required for analysis',
+    };
+  }
 
-    const prompt = `
+  const prompt = `
 Analyze this hockey content for trivia potential:
 
 ${content}
@@ -446,6 +393,7 @@ Format as JSON:
   "difficulty": "easy|medium|hard"
 }`;
 
+  try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
