@@ -6,16 +6,10 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import Image from 'next/image';
 import SupabaseStatus from '@/components/supabase-status';
-import SupabaseTestButton from '@/components/supabase-test-button';
-import GeminiTest from '@/components/gemini-test';
 
 const navigation = [
   { name: 'Dashboard', href: '/cms' },
-  { name: 'Content Editor', href: '/cms/content' },
   { name: 'Source Creator', href: '/cms/source' },
-  { name: 'Content Library', href: '/cms/content/list' },
-  { name: 'Media Library', href: '/cms/media' },
-  { name: 'Categories', href: '/cms/categories' },
 ];
 
 export default function CMSLanding() {
@@ -28,7 +22,7 @@ export default function CMSLanding() {
           <div className="px-6 pt-6 lg:max-w-2xl lg:pr-0 lg:pl-8">
             <nav
               aria-label="Global"
-              className="flex items-center justify-between lg:justify-start"
+              className="flex items-center justify-between lg:justify-start whitespace-nowrap"
             >
               <Link href="/cms" className="-m-1.5 p-1.5">
                 <span className="sr-only">Tango CMS</span>
@@ -49,12 +43,12 @@ export default function CMSLanding() {
                 <span className="sr-only">Open main menu</span>
                 <Bars3Icon aria-hidden="true" className="size-6" />
               </button>
-              <div className="hidden lg:ml-12 lg:flex lg:gap-x-14 lg:items-center">
+              <div className="hidden lg:ml-12 lg:flex lg:gap-x-14 lg:items-center flex-nowrap whitespace-nowrap">
                 {navigation.map(item => (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="text-sm/6 font-semibold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    className="text-sm/6 font-semibold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors whitespace-nowrap"
                   >
                     {item.name}
                   </Link>
@@ -139,20 +133,8 @@ export default function CMSLanding() {
 
             <div className="relative px-6 py-32 sm:py-40 lg:px-8 lg:py-56 lg:pr-0">
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
-                <div className="hidden sm:mb-10 sm:flex">
-                  <div className="relative rounded-full px-3 py-1 text-sm/6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20 dark:text-gray-400 dark:ring-white/10 dark:hover:ring-white/20">
-                    Content Management System for Onlyhockey.com{' '}
-                    <Link
-                      href="/cms"
-                      className="font-semibold whitespace-nowrap text-indigo-600 dark:text-indigo-400"
-                    >
-                      <span aria-hidden="true" className="absolute inset-0" />
-                      Get started <span aria-hidden="true">&rarr;</span>
-                    </Link>
-                  </div>
-                </div>
                 <h1 className="text-5xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-7xl dark:text-white">
-                  Onlyhockey.com CMS
+                  Only Hockey
                 </h1>
                 <p className="mt-8 text-lg font-medium text-pretty text-gray-500 sm:text-xl/8 dark:text-gray-400">
                   Create, organize, and publish engaging hockey content for
@@ -172,22 +154,6 @@ export default function CMSLanding() {
                   >
                     Create content <span aria-hidden="true">→</span>
                   </Link>
-                </div>
-
-                {/* Supabase Connection Test */}
-                <div className="mt-12">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    Database Connection Test
-                  </h3>
-                  <SupabaseTestButton />
-                </div>
-
-                {/* Gemini API Test */}
-                <div className="mt-12">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    Gemini API Test Suite
-                  </h3>
-                  <GeminiTest />
                 </div>
               </div>
             </div>
