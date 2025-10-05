@@ -170,33 +170,6 @@ export default function GeminiTest() {
           )}
           Test API Connection
         </button>
-
-        <button
-          onClick={async () => {
-            setIsTesting(true);
-            setTestResult('Fetching available models...');
-            try {
-              const response = await fetch('/api/gemini/models');
-              const result = await response.json();
-              if (result.success) {
-                const modelsText = result.models
-                  .map((m: any) => `${m.name} - ${m.displayName}`)
-                  .join('\n');
-                setTestResult(`✅ Available Models:\n${modelsText}`);
-              } else {
-                setTestResult(`❌ Error: ${result.error}`);
-              }
-            } catch (error) {
-              setTestResult(`❌ Error: ${error}`);
-            } finally {
-              setIsTesting(false);
-            }
-          }}
-          disabled={isTesting}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          List Available Models
-        </button>
       </div>
 
       {/* Sample Content */}
