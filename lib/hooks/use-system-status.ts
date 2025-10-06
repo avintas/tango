@@ -23,10 +23,8 @@ export function useSystemStatus() {
   useEffect(() => {
     const checkSystemStatus = async () => {
       try {
-        // Check if Gemini API key is configured
-        const apiConfigured =
-          !!process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-          !!process.env.GEMINI_API_KEY;
+        // API configuration check (Gemini disabled)
+        const apiConfigured = false;
 
         // Get source items count
         const { count: sourceCount, error: sourceError } = await supabase

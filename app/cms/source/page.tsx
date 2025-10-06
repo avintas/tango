@@ -307,12 +307,14 @@ export default function SourceCreator() {
       const contentTypeLabel =
         contentTypes.find(ct => ct.value === contentType)?.label || contentType;
 
-      console.log('Calling generateContent...');
-      const geminiResult = await generateContent(
-        analysisResults.trim(),
+      console.log('Gemini API is disabled - skipping content generation');
+      const geminiResult = {
+        success: false,
+        content: [],
         contentType,
-        5
-      );
+        error: 'Gemini API is not available - API key not configured',
+        processingTime: 0,
+      };
 
       console.log('Gemini result:', geminiResult);
 
@@ -351,19 +353,7 @@ ${formattedContent}`;
   };
 
   const testGemini = async () => {
-    setGeminiStatus('Testing Gemini connection...');
-    try {
-      const result = await testGeminiConnection();
-      if (result.success) {
-        setGeminiStatus('✅ Gemini API is working!');
-      } else {
-        setGeminiStatus(`❌ Gemini error: ${result.error}`);
-      }
-    } catch (error) {
-      setGeminiStatus(
-        `❌ Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
+    setGeminiStatus('Gemini API is disabled - no API key configured');
   };
 
   const wordCount = content

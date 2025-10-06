@@ -14,124 +14,16 @@ export default function GeminiTest() {
 
   const handleConnectionTest = async () => {
     setIsTesting(true);
-    setTestResult('Testing Gemini API connection...');
-
-    try {
-      const response = await fetch('/api/gemini/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setTestResult('✅ Gemini API connection successful!');
-      } else {
-        setTestResult(`❌ Connection failed: ${result.error}`);
-      }
-    } catch (error) {
-      setTestResult(
-        `❌ Test error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setIsTesting(false);
-    }
+    setTestResult('Gemini API is disabled - no API key configured');
+    setIsTesting(false);
   };
 
   const handleTriviaTest = async () => {
-    if (!sampleContent.trim()) {
-      setTestResult('❌ Please enter some sample content first.');
-      return;
-    }
-
-    setIsTesting(true);
-    setTestResult('Generating trivia questions...');
-
-    try {
-      const response = await fetch('/api/gemini/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: sampleContent,
-          contentType: 'trivia_questions',
-          numItems: 3,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const questionsText = result.content
-          .map(
-            (q: any, i: number) =>
-              `${i + 1}. ${q.question}\n   ✓ ${q.correct_answer}\n   ✗ ${q.incorrect_answers.join(', ')}\n   Difficulty: ${q.difficulty}`
-          )
-          .join('\n\n');
-
-        setTestResult(
-          `✅ Generated ${result.content.length} trivia questions (${result.processingTime}ms):\n\n${questionsText}`
-        );
-      } else {
-        setTestResult(`❌ Trivia generation failed: ${result.error}`);
-      }
-    } catch (error) {
-      setTestResult(
-        `❌ Trivia test error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setIsTesting(false);
-    }
+    setTestResult('Gemini API is disabled - no API key configured');
   };
 
   const handleAnalysisTest = async () => {
-    if (!sampleContent.trim()) {
-      setTestResult('❌ Please enter some sample content first.');
-      return;
-    }
-
-    setIsTesting(true);
-    setTestResult('Analyzing content...');
-
-    try {
-      const response = await fetch('/api/gemini/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: sampleContent,
-          contentType: 'factoids',
-          numItems: 3,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const factoidsText = result.content
-          .map(
-            (f: any, i: number) =>
-              `${i + 1}. ${f.fact}\n   Category: ${f.category} | Difficulty: ${f.difficulty}`
-          )
-          .join('\n\n');
-
-        setTestResult(
-          `✅ Content Analysis - Generated ${result.content.length} factoids (${result.processingTime}ms):\n\n${factoidsText}`
-        );
-      } else {
-        setTestResult(`❌ Analysis failed: ${result.error}`);
-      }
-    } catch (error) {
-      setTestResult(
-        `❌ Analysis test error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setIsTesting(false);
-    }
+    setTestResult('Gemini API is disabled - no API key configured');
   };
 
   return (

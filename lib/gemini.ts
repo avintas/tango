@@ -1,9 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini API client
-const genAI = new GoogleGenerativeAI(
-  process.env.NEXT_PUBLIC_GEMINI_API_KEY || ''
-);
+// Initialize Gemini API client (disabled - no API key)
+const genAI = new GoogleGenerativeAI('');
 
 // Get the generative model (Gemini Pro)
 const model = genAI.getGenerativeModel({ model: 'gemini-pro-latest' });
@@ -184,63 +182,14 @@ async function _callGeminiAndParse(
 ): Promise<ContentGenerationResult> {
   const startTime = performance.now();
 
-  try {
-    // Validate API key
-    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
-      throw new Error(
-        'NEXT_PUBLIC_GEMINI_API_KEY environment variable is not set'
-      );
-    }
-
-    // Generate content using Gemini
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Parse the JSON response
-    let generatedContent: any[];
-    try {
-      // Clean up the response text (remove any markdown formatting)
-      const cleanedText = text
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
-      generatedContent = JSON.parse(cleanedText);
-    } catch (parseError) {
-      throw new Error(`Failed to parse Gemini response as JSON: ${parseError}`);
-    }
-
-    // Validate the response structure
-    if (!Array.isArray(generatedContent)) {
-      throw new Error('Gemini response is not an array');
-    }
-
-    // Run custom validation if provided
-    if (validateStructure && !validateStructure(generatedContent)) {
-      throw new Error('Generated content does not match expected structure');
-    }
-
-    const endTime = performance.now();
-    const processingTime = Math.round(endTime - startTime);
-
-    return {
-      success: true,
-      content: generatedContent,
-      contentType,
-      processingTime,
-    };
-  } catch (error) {
-    const endTime = performance.now();
-    const processingTime = Math.round(endTime - startTime);
-
-    return {
-      success: false,
-      content: [],
-      contentType,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-      processingTime,
-    };
-  }
+  // Gemini API is disabled
+  return {
+    success: false,
+    content: [],
+    contentType,
+    error: 'Gemini API is not available - API key not configured',
+    processingTime: 0,
+  };
 }
 
 /**
@@ -339,12 +288,11 @@ export async function testGeminiConnection(): Promise<{
   const testPrompt = 'Say "Hello, Gemini API is working!" and nothing else.';
 
   try {
-    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
-      return {
-        success: false,
-        error: 'NEXT_PUBLIC_GEMINI_API_KEY environment variable is not set',
-      };
-    }
+    // Gemini API is disabled
+    return {
+      success: false,
+      error: 'Gemini API is not available - API key not configured',
+    };
 
     // Simple test prompt
     const result = await model.generateContent(testPrompt);
