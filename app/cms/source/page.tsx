@@ -7,12 +7,7 @@ import {
   ProcessingStep,
   ProcessingResult,
 } from '@/lib/text-processing';
-import {
-  generateContent,
-  ContentType,
-  ContentGenerationResult,
-  testGeminiConnection,
-} from '@/lib/gemini';
+import { ContentType, ContentGenerationResult } from '@/lib/gemini';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 const contentTypes: {
@@ -307,14 +302,20 @@ export default function SourceCreator() {
       const contentTypeLabel =
         contentTypes.find(ct => ct.value === contentType)?.label || contentType;
 
-      console.log('Gemini API is disabled - skipping content generation');
-      const geminiResult = {
-        success: false,
-        content: [],
-        contentType,
-        error: 'Gemini API is not available - API key not configured',
-        processingTime: 0,
-      };
+      // Call the API route for content generation
+      const response = await fetch('/api/gemini/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: analysisResults,
+          contentType: contentType,
+          numItems: 5,
+        }),
+      });
+
+      const geminiResult = await response.json();
 
       console.log('Gemini result:', geminiResult);
 
@@ -353,7 +354,28 @@ ${formattedContent}`;
   };
 
   const testGemini = async () => {
-    setGeminiStatus('Gemini API is disabled - no API key configured');
+    setGeminiStatus('Testing Gemini API...');
+
+    try {
+      const response = await fetch('/api/gemini/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setGeminiStatus('✅ Gemini API is working!');
+      } else {
+        setGeminiStatus(`❌ ${result.error || 'Test failed'}`);
+      }
+    } catch (error) {
+      setGeminiStatus(
+        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   };
 
   const wordCount = content

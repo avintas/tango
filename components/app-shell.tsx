@@ -26,7 +26,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import { useSystemStatus } from '@/lib/hooks/use-system-status';
-import { testGeminiConnection } from '@/lib/gemini';
 
 const navigation = [
   { name: 'Dashboard', href: '/cms', icon: HomeIcon },
@@ -67,7 +66,15 @@ export default function AppShell({
     setGeminiTestStatus('Testing...');
 
     try {
-      const result = await testGeminiConnection();
+      const response = await fetch('/api/gemini/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
       if (result.success) {
         setGeminiTestStatus('✅ Gemini API is working!');
       } else {
