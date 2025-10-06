@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import { useSystemStatus } from '@/lib/hooks/use-system-status';
+import { testGeminiConnection } from '@/lib/gemini';
 
 const navigation = [
   { name: 'Dashboard', href: '/cms', icon: HomeIcon },
@@ -56,8 +57,30 @@ export default function AppShell({
   title = 'Tango CMS',
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [geminiTestStatus, setGeminiTestStatus] = useState<string>('');
+  const [isTestingGemini, setIsTestingGemini] = useState(false);
   const pathname = usePathname();
   const systemStatus = useSystemStatus();
+
+  const testGemini = async () => {
+    setIsTestingGemini(true);
+    setGeminiTestStatus('Testing...');
+
+    try {
+      const result = await testGeminiConnection();
+      if (result.success) {
+        setGeminiTestStatus('✅ Gemini API is working!');
+      } else {
+        setGeminiTestStatus(`❌ ${result.error || 'Test failed'}`);
+      }
+    } catch (error) {
+      setGeminiTestStatus(
+        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setIsTestingGemini(false);
+    }
+  };
 
   return (
     <>
@@ -204,6 +227,22 @@ export default function AppShell({
                               ? '...'
                               : systemStatus.triviaSetsCount}
                           </div>
+
+                          {/* Test Gemini Button */}
+                          <div className="pt-2">
+                            <button
+                              onClick={testGemini}
+                              disabled={isTestingGemini}
+                              className="w-full px-3 py-1.5 text-xs font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-md border border-gray-600 hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isTestingGemini ? 'Testing...' : 'Test Gemini'}
+                            </button>
+                            {geminiTestStatus && (
+                              <div className="mt-1 text-xs text-gray-400">
+                                {geminiTestStatus}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </li>
@@ -347,6 +386,22 @@ export default function AppShell({
                         {systemStatus.loading
                           ? '...'
                           : systemStatus.triviaSetsCount}
+                      </div>
+
+                      {/* Test Gemini Button */}
+                      <div className="pt-2">
+                        <button
+                          onClick={testGemini}
+                          disabled={isTestingGemini}
+                          className="w-full px-3 py-1.5 text-xs font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-md border border-gray-600 hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isTestingGemini ? 'Testing...' : 'Test Gemini'}
+                        </button>
+                        {geminiTestStatus && (
+                          <div className="mt-1 text-xs text-gray-400">
+                            {geminiTestStatus}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
