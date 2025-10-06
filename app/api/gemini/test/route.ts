@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { testGeminiConnection } from '@/lib/gemini';
 
 export async function POST(request: NextRequest) {
-  return NextResponse.json({
-    success: false,
-    error: 'Gemini API is not available - API key not configured',
-    message: 'Gemini API is disabled - no API key configured',
-  });
+  try {
+    const result = await testGeminiConnection();
+    return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      },
+      { status: 500 }
+    );
+  }
 }
