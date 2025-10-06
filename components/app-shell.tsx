@@ -19,12 +19,12 @@ import {
   XMarkIcon,
   ChartBarIcon,
   ClipboardDocumentIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
-import { useSystemStatus } from '@/lib/hooks/use-system-status';
 
 const navigation = [
   { name: 'Dashboard', href: '/cms', icon: HomeIcon },
@@ -32,6 +32,7 @@ const navigation = [
   { name: 'Content Editor', href: '/cms/content', icon: DocumentTextIcon },
   { name: 'Users', href: '/cms/users', icon: UserGroupIcon },
   { name: 'Reports', href: '/cms/reports', icon: ChartBarIcon },
+  { name: 'Settings', href: '/cms/settings', icon: Cog6ToothIcon },
 ];
 
 const quickActions = [
@@ -56,7 +57,6 @@ export default function AppShell({
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const systemStatus = useSystemStatus();
 
   return (
     <>
@@ -154,64 +154,6 @@ export default function AppShell({
                         ))}
                       </ul>
                     </li>
-
-                    {/* System Status */}
-                    <li className="mt-6 pt-4 border-t border-white/10">
-                      <div className="px-2 py-3 space-y-3">
-                        <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                          System Status
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                            <span className="text-xs text-gray-300">
-                              DB: Connected
-                            </span>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                systemStatus.apiStatus === 'testing'
-                                  ? 'bg-yellow-400'
-                                  : systemStatus.apiStatus === 'configured'
-                                    ? 'bg-green-400'
-                                    : 'bg-red-400'
-                              }`}
-                            ></div>
-                            <span className="text-xs text-gray-300">
-                              API:{' '}
-                              {systemStatus.apiStatus === 'testing'
-                                ? 'Testing...'
-                                : systemStatus.apiStatus === 'configured'
-                                  ? 'Working'
-                                  : systemStatus.apiStatus === 'error'
-                                    ? 'Error'
-                                    : 'Not configured'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-
-                    <li className="-mx-6 mt-auto">
-                      <div className="flex items-center gap-x-4 px-6 py-3">
-                        <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
-                          <span className="text-sm font-medium text-white">
-                            A
-                          </span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-white">
-                            Admin
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            admin@tango.com
-                          </span>
-                        </div>
-                      </div>
-                    </li>
                   </ul>
                 </nav>
               </div>
@@ -277,62 +219,6 @@ export default function AppShell({
                       </li>
                     ))}
                   </ul>
-                </li>
-
-                {/* System Status */}
-                <li className="mt-6 pt-4 border-t border-white/10">
-                  <div className="px-2 py-3 space-y-3">
-                    <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                      System Status
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                        <span className="text-xs text-gray-300">
-                          DB: Connected
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            systemStatus.apiStatus === 'testing'
-                              ? 'bg-yellow-400'
-                              : systemStatus.apiStatus === 'configured'
-                                ? 'bg-green-400'
-                                : 'bg-red-400'
-                          }`}
-                        ></div>
-                        <span className="text-xs text-gray-300">
-                          API:{' '}
-                          {systemStatus.apiStatus === 'testing'
-                            ? 'Testing...'
-                            : systemStatus.apiStatus === 'configured'
-                              ? 'Working'
-                              : systemStatus.apiStatus === 'error'
-                                ? 'Error'
-                                : 'Not configured'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-
-                <li className="-mx-6 mt-auto">
-                  <div className="flex items-center gap-x-4 px-6 py-3">
-                    <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
-                      <span className="text-sm font-medium text-white">A</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-white">
-                        Admin
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        admin@tango.com
-                      </span>
-                    </div>
-                  </div>
                 </li>
               </ul>
             </nav>
