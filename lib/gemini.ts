@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini API client (disabled - no API key)
-const genAI = new GoogleGenerativeAI('');
+// Initialize Gemini API client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Get the generative model (Gemini Pro)
 const model = genAI.getGenerativeModel({ model: 'gemini-pro-latest' });
@@ -182,14 +182,68 @@ async function _callGeminiAndParse(
 ): Promise<ContentGenerationResult> {
   const startTime = performance.now();
 
-  // Gemini API is disabled
-  return {
-    success: false,
-    content: [],
-    contentType,
-    error: 'Gemini API is not available - API key not configured',
-    processingTime: 0,
-  };
+  // Check if API key is available
+  if (!process.env.GEMINI_API_KEY) {
+    return {
+      success: false,
+      content: [],
+      contentType,
+      error: 'Gemini API is not available - API key not configured',
+      processingTime: 0,
+    };
+  }
+
+  try {
+    // Generate content using Gemini API
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Parse JSON response
+    const cleanedText = text
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+
+    let generatedContent;
+    try {
+      generatedContent = JSON.parse(cleanedText);
+    } catch (parseError) {
+      return {
+        success: false,
+        content: [],
+        contentType,
+        error: 'Failed to parse JSON response from Gemini API',
+        processingTime: performance.now() - startTime,
+      };
+    }
+
+    // Validate structure if validation function provided
+    if (validateStructure && !validateStructure(generatedContent)) {
+      return {
+        success: false,
+        content: [],
+        contentType,
+        error: 'Generated content does not match expected structure',
+        processingTime: performance.now() - startTime,
+      };
+    }
+
+    return {
+      success: true,
+      content: generatedContent,
+      contentType,
+      processingTime: performance.now() - startTime,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      content: [],
+      contentType,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      processingTime: performance.now() - startTime,
+    };
+  }
 }
 
 /**
@@ -285,15 +339,17 @@ export async function testGeminiConnection(): Promise<{
   success: boolean;
   error?: string;
 }> {
-  const testPrompt = 'Say "Hello, Gemini API is working!" and nothing else.';
-
-  try {
-    // Gemini API is disabled
+  // Check if API key is available
+  if (!process.env.GEMINI_API_KEY) {
     return {
       success: false,
       error: 'Gemini API is not available - API key not configured',
     };
+  }
 
+  const testPrompt = 'Say "Hello, Gemini API is working!" and nothing else.';
+
+  try {
     // Simple test prompt
     const result = await model.generateContent(testPrompt);
     const response = await result.response;
@@ -344,6 +400,14 @@ Format as JSON:
   "suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
   "difficulty": "easy|medium|hard"
 }`;
+
+  // Check if API key is available
+  if (!process.env.GEMINI_API_KEY) {
+    return {
+      success: false,
+      error: 'Gemini API is not available - API key not configured',
+    };
+  }
 
   try {
     const result = await model.generateContent(prompt);
