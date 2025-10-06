@@ -17,7 +17,6 @@ import {
   TagIcon,
   UserGroupIcon,
   XMarkIcon,
-  Cog6ToothIcon,
   ChartBarIcon,
   ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
@@ -56,38 +55,8 @@ export default function AppShell({
   title = 'Tango CMS',
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [geminiTestStatus, setGeminiTestStatus] = useState<string>('');
-  const [isTestingGemini, setIsTestingGemini] = useState(false);
   const pathname = usePathname();
   const systemStatus = useSystemStatus();
-
-  const testGemini = async () => {
-    setIsTestingGemini(true);
-    setGeminiTestStatus('Testing...');
-
-    try {
-      const response = await fetch('/api/gemini/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setGeminiTestStatus('✅ Gemini API is working!');
-      } else {
-        setGeminiTestStatus(`❌ ${result.error || 'Test failed'}`);
-      }
-    } catch (error) {
-      setGeminiTestStatus(
-        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setIsTestingGemini(false);
-    }
-  };
 
   return (
     <>
@@ -204,51 +173,23 @@ export default function AppShell({
                           <div className="flex items-center space-x-2">
                             <div
                               className={`w-2 h-2 rounded-full ${
-                                systemStatus.loading
+                                systemStatus.apiStatus === 'testing'
                                   ? 'bg-yellow-400'
-                                  : systemStatus.apiConfigured
-                                    ? 'bg-blue-400'
+                                  : systemStatus.apiStatus === 'configured'
+                                    ? 'bg-green-400'
                                     : 'bg-red-400'
                               }`}
                             ></div>
                             <span className="text-xs text-gray-300">
                               API:{' '}
-                              {systemStatus.loading
-                                ? 'Checking...'
-                                : systemStatus.apiConfigured
-                                  ? 'Configured'
-                                  : 'Not configured'}
+                              {systemStatus.apiStatus === 'testing'
+                                ? 'Testing...'
+                                : systemStatus.apiStatus === 'configured'
+                                  ? 'Working'
+                                  : systemStatus.apiStatus === 'error'
+                                    ? 'Error'
+                                    : 'Not configured'}
                             </span>
-                          </div>
-
-                          <div className="text-xs text-gray-300">
-                            Source items:{' '}
-                            {systemStatus.loading
-                              ? '...'
-                              : systemStatus.sourceItemsCount}
-                          </div>
-
-                          <div className="text-xs text-gray-300">
-                            Trivia sets:{' '}
-                            {systemStatus.loading
-                              ? '...'
-                              : systemStatus.triviaSetsCount}
-                          </div>
-
-                          {/* Test Gemini Button */}
-                          <div className="pt-2">
-                            <button
-                              onClick={testGemini}
-                              disabled={isTestingGemini}
-                              className="w-full px-3 py-1.5 text-xs font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-md border border-gray-600 hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {isTestingGemini ? 'Testing...' : 'Test Gemini'}
-                            </button>
-                            {geminiTestStatus && (
-                              <div className="mt-1 text-xs text-gray-400">
-                                {geminiTestStatus}
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -270,14 +211,6 @@ export default function AppShell({
                           </span>
                         </div>
                       </div>
-                      <Link
-                        href="/cms/settings"
-                        className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-white/5"
-                        onClick={() => setSidebarOpen(false)}
-                      >
-                        <Cog6ToothIcon className="size-6 shrink-0" />
-                        <span>Settings</span>
-                      </Link>
                     </li>
                   </ul>
                 </nav>
@@ -364,51 +297,23 @@ export default function AppShell({
                       <div className="flex items-center space-x-2">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            systemStatus.loading
+                            systemStatus.apiStatus === 'testing'
                               ? 'bg-yellow-400'
-                              : systemStatus.apiConfigured
-                                ? 'bg-blue-400'
+                              : systemStatus.apiStatus === 'configured'
+                                ? 'bg-green-400'
                                 : 'bg-red-400'
                           }`}
                         ></div>
                         <span className="text-xs text-gray-300">
                           API:{' '}
-                          {systemStatus.loading
-                            ? 'Checking...'
-                            : systemStatus.apiConfigured
-                              ? 'Configured'
-                              : 'Not configured'}
+                          {systemStatus.apiStatus === 'testing'
+                            ? 'Testing...'
+                            : systemStatus.apiStatus === 'configured'
+                              ? 'Working'
+                              : systemStatus.apiStatus === 'error'
+                                ? 'Error'
+                                : 'Not configured'}
                         </span>
-                      </div>
-
-                      <div className="text-xs text-gray-300">
-                        Source items:{' '}
-                        {systemStatus.loading
-                          ? '...'
-                          : systemStatus.sourceItemsCount}
-                      </div>
-
-                      <div className="text-xs text-gray-300">
-                        Trivia sets:{' '}
-                        {systemStatus.loading
-                          ? '...'
-                          : systemStatus.triviaSetsCount}
-                      </div>
-
-                      {/* Test Gemini Button */}
-                      <div className="pt-2">
-                        <button
-                          onClick={testGemini}
-                          disabled={isTestingGemini}
-                          className="w-full px-3 py-1.5 text-xs font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-md border border-gray-600 hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isTestingGemini ? 'Testing...' : 'Test Gemini'}
-                        </button>
-                        {geminiTestStatus && (
-                          <div className="mt-1 text-xs text-gray-400">
-                            {geminiTestStatus}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -428,13 +333,6 @@ export default function AppShell({
                       </span>
                     </div>
                   </div>
-                  <Link
-                    href="/cms/settings"
-                    className="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-white/5"
-                  >
-                    <Cog6ToothIcon className="size-6 shrink-0" />
-                    <span>Settings</span>
-                  </Link>
                 </li>
               </ul>
             </nav>

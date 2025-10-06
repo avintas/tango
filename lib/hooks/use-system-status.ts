@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 interface SystemStatus {
   apiConfigured: boolean;
+  apiStatus: 'configured' | 'not-configured' | 'testing' | 'error';
   sourceItemsCount: number;
   triviaSetsCount: number;
   loading: boolean;
@@ -14,6 +15,7 @@ interface SystemStatus {
 export function useSystemStatus() {
   const [status, setStatus] = useState<SystemStatus>({
     apiConfigured: false,
+    apiStatus: 'testing',
     sourceItemsCount: 0,
     triviaSetsCount: 0,
     loading: true,
@@ -23,8 +25,21 @@ export function useSystemStatus() {
   useEffect(() => {
     const checkSystemStatus = async () => {
       try {
-        // API configuration check (Gemini disabled)
-        const apiConfigured = false;
+        // Test Gemini API configuration
+        let apiConfigured = false;
+        try {
+          const response = await fetch('/api/gemini/test', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          const result = await response.json();
+          apiConfigured = result.success;
+        } catch (apiError) {
+          console.log('Gemini API test failed:', apiError);
+          apiConfigured = false;
+        }
 
         // Get source items count
         const { count: sourceCount, error: sourceError } = await supabase
@@ -42,6 +57,7 @@ export function useSystemStatus() {
 
         setStatus({
           apiConfigured,
+          apiStatus: apiConfigured ? 'configured' : 'not-configured',
           sourceItemsCount: sourceCount || 0,
           triviaSetsCount,
           loading: false,
@@ -50,6 +66,7 @@ export function useSystemStatus() {
       } catch (error) {
         setStatus(prev => ({
           ...prev,
+          apiStatus: 'error',
           loading: false,
           error: error instanceof Error ? error.message : 'Unknown error',
         }));
