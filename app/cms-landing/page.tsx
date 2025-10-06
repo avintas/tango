@@ -7,10 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import SupabaseStatus from '@/components/supabase-status';
 
-const navigation = [
-  { name: 'Dashboard', href: '/cms' },
-  { name: 'Source Creator', href: '/cms/source' },
-];
+const navigation = [];
 
 export default function CMSLanding() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,7 +21,7 @@ export default function CMSLanding() {
               aria-label="Global"
               className="flex items-center justify-between lg:justify-start whitespace-nowrap"
             >
-              <Link href="/cms" className="-m-1.5 p-1.5">
+              <div className="-m-1.5 p-1.5">
                 <span className="sr-only">Tango CMS</span>
                 <div className="flex items-center space-x-2">
                   <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -34,7 +31,7 @@ export default function CMSLanding() {
                     Tango CMS
                   </span>
                 </div>
-              </Link>
+              </div>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
@@ -143,16 +140,10 @@ export default function CMSLanding() {
                 </p>
                 <div className="mt-10 flex items-center gap-x-6">
                   <Link
-                    href="/cms"
+                    href="/cms/source"
                     className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500"
                   >
-                    Access CMS Dashboard
-                  </Link>
-                  <Link
-                    href="/cms/content"
-                    className="text-sm/6 font-semibold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400"
-                  >
-                    Create content <span aria-hidden="true">→</span>
+                    Access CMS
                   </Link>
                 </div>
               </div>

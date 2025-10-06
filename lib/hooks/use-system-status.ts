@@ -30,7 +30,7 @@ export function useSystemStatus() {
 
         // Get source items count
         const { count: sourceCount, error: sourceError } = await supabase
-          .from('content_items')
+          .from('source_content')
           .select('*', { count: 'exact', head: true })
           .eq('metadata->>type', 'source_material');
 

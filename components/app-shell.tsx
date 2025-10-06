@@ -29,11 +29,8 @@ import { useSystemStatus } from '@/lib/hooks/use-system-status';
 
 const navigation = [
   { name: 'Dashboard', href: '/cms', icon: HomeIcon },
-  { name: 'Content Editor', href: '/cms/content', icon: DocumentTextIcon },
   { name: 'Source Creator', href: '/cms/source', icon: ClipboardDocumentIcon },
-  { name: 'Content Library', href: '/cms/content/list', icon: FolderIcon },
-  { name: 'Media Library', href: '/cms/media', icon: PhotoIcon },
-  { name: 'Categories', href: '/cms/categories', icon: TagIcon },
+  { name: 'Content Editor', href: '/cms/content', icon: DocumentTextIcon },
   { name: 'Users', href: '/cms/users', icon: UserGroupIcon },
   { name: 'Reports', href: '/cms/reports', icon: ChartBarIcon },
 ];

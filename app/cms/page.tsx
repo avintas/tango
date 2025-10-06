@@ -1,6 +1,7 @@
 import { Text } from '@/components/text';
 import { Button } from '@/components/button';
 import RLSTest from '@/components/rls-test';
+import ContentProcessor from '@/components/content-processor';
 
 export default function CMSDashboard() {
   return (
@@ -85,6 +86,9 @@ export default function CMSDashboard() {
           </Text>
         </div>
       </div>
+
+      {/* Content Processor */}
+      <ContentProcessor />
 
       {/* RLS Security Tests */}
       <RLSTest />

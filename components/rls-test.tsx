@@ -58,34 +58,13 @@ export default function RLSTest() {
         userId: user.id,
       });
 
-      // Test 2: Check user profile
-      addResult('User Profile', 'pending', 'Checking user profile...');
-      const { data: userProfile, error: profileError } = await supabase
-        .from('cms_users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        addResult(
-          'User Profile',
-          'error',
-          `Profile error: ${profileError.message}`
-        );
-      } else if (!userProfile) {
-        addResult(
-          'User Profile',
-          'error',
-          'User profile not found in cms_users table'
-        );
-      } else {
-        addResult(
-          'User Profile',
-          'success',
-          `Profile found - Role: ${userProfile.role}`,
-          userProfile
-        );
-      }
+      // Test 2: Check user profile (skipped - no cms_users table)
+      addResult(
+        'User Profile',
+        'skipped',
+        'User profile system not implemented yet'
+      );
+      const userProfile = null; // Set to null since we're skipping this test
 
       // Test 3: Test helper functions
       addResult('Helper Functions', 'pending', 'Testing helper functions...');
@@ -117,8 +96,8 @@ export default function RLSTest() {
       // Test 4: Test content access
       addResult('Content Access', 'pending', 'Testing content access...');
       const { data: content, error: contentError } = await supabase
-        .from('content_items')
-        .select('id, title, status, author_id')
+        .from('source_content')
+        .select('id, original_text, created_at')
         .limit(5);
 
       if (contentError) {
@@ -137,47 +116,32 @@ export default function RLSTest() {
       }
 
       // Test 5: Test categories access
-      addResult('Categories Access', 'pending', 'Testing categories access...');
-      const { data: categories, error: categoriesError } = await supabase
-        .from('content_categories')
+      addResult(
+        'Source Content Access',
+        'pending',
+        'Testing source content access...'
+      );
+      const { data: sourceContent, error: sourceContentError } = await supabase
+        .from('source_content')
         .select('*');
 
-      if (categoriesError) {
+      if (sourceContentError) {
         addResult(
-          'Categories Access',
+          'Source Content Access',
           'error',
-          `Categories error: ${categoriesError.message}`
+          `Source content error: ${sourceContentError.message}`
         );
       } else {
         addResult(
-          'Categories Access',
+          'Source Content Access',
           'success',
-          `Can access ${categories?.length || 0} categories`,
-          categories
+          `Can access ${sourceContent?.length || 0} source content items`,
+          sourceContent
         );
       }
 
-      // Test 6: Test media access
-      addResult('Media Access', 'pending', 'Testing media access...');
-      const { data: media, error: mediaError } = await supabase
-        .from('media_library')
-        .select('id, filename, file_type')
-        .limit(5);
-
-      if (mediaError) {
-        addResult(
-          'Media Access',
-          'error',
-          `Media access error: ${mediaError.message}`
-        );
-      } else {
-        addResult(
-          'Media Access',
-          'success',
-          `Can access ${media?.length || 0} media files`,
-          media
-        );
-      }
+      // Test 6: Test media access (skipped - no media table)
+      addResult('Media Access', 'skipped', 'Media library not implemented yet');
 
       // Test 7: Test admin-only access (if user is admin)
       if (
@@ -186,9 +150,9 @@ export default function RLSTest() {
       ) {
         addResult('Admin Access', 'pending', 'Testing admin-only access...');
 
-        const { data: allUsers, error: usersError } = await supabase
-          .from('cms_users')
-          .select('id, email, name, role, is_active');
+        // Skip user management test - no cms_users table
+        const allUsers = null;
+        const usersError = null;
 
         if (usersError) {
           addResult(
@@ -259,17 +223,11 @@ export default function RLSTest() {
 
       addResult('Create Test User', 'pending', 'Creating test user profile...');
 
-      const { data, error } = await supabase
-        .from('cms_users')
-        .insert({
-          id: user.id,
-          email: user.email,
-          name: user.user_metadata?.full_name || 'Test User',
-          role: 'super_admin',
-          is_active: true,
-        })
-        .select()
-        .single();
+      // Skip user creation - no cms_users table
+      const data = null;
+      const error = new Error(
+        'User creation not implemented - no cms_users table'
+      );
 
       if (error) {
         addResult('Create Test User', 'error', `Error: ${error.message}`);
@@ -325,8 +283,7 @@ export default function RLSTest() {
             Create Test User Profile
           </Button>
           <Text className="text-xs text-gray-500">
-            Use this if you haven&apos;t created a user profile in the cms_users
-            table yet
+            User profile system not implemented yet
           </Text>
         </div>
       </div>

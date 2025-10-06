@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize Gemini API client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(
+  process.env.NEXT_PUBLIC_GEMINI_API_KEY || ''
+);
 
 // Get the generative model (Gemini Pro)
 const model = genAI.getGenerativeModel({ model: 'gemini-pro-latest' });
@@ -184,8 +186,10 @@ async function _callGeminiAndParse(
 
   try {
     // Validate API key
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY environment variable is not set');
+    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
+      throw new Error(
+        'NEXT_PUBLIC_GEMINI_API_KEY environment variable is not set'
+      );
     }
 
     // Generate content using Gemini
@@ -335,10 +339,10 @@ export async function testGeminiConnection(): Promise<{
   const testPrompt = 'Say "Hello, Gemini API is working!" and nothing else.';
 
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
       return {
         success: false,
-        error: 'GEMINI_API_KEY environment variable is not set',
+        error: 'NEXT_PUBLIC_GEMINI_API_KEY environment variable is not set',
       };
     }
 

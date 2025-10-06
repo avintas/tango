@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import {
   processText,
   getInitialSteps,
@@ -12,6 +11,7 @@ import {
   generateContent,
   ContentType,
   ContentGenerationResult,
+  testGeminiConnection,
 } from '@/lib/gemini';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
@@ -119,10 +119,14 @@ export default function SourceCreator() {
   const [isPosting, setIsPosting] = useState(false);
   const [isSavingAnalysis, setIsSavingAnalysis] = useState(false);
   const [message, setMessage] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [processingSteps, setProcessingSteps] =
     useState<ProcessingStep[]>(getInitialSteps());
   const [processingResult, setProcessingResult] =
     useState<ProcessingResult | null>(null);
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [geminiStatus, setGeminiStatus] = useState<string>('');
 
   const handleProcess = async () => {
     if (!content.trim()) {
@@ -142,39 +146,38 @@ export default function SourceCreator() {
       setContent(textResult.processedText);
       setProcessingSteps(textResult.steps);
 
-      // Then generate content with Gemini
-      setMessage('Generating content with Gemini...');
-      const contentTypeLabel =
-        contentTypes.find(ct => ct.value === contentType)?.label || contentType;
-      const geminiResult = await generateContent(
-        textResult.processedText,
-        contentType,
-        5
-      );
+      // Move cleaned text to Analysis Panel
+      setAnalysisResults(textResult.processedText);
 
-      if (geminiResult.success) {
-        // Format the generated content for display
-        const formattedContent = formatGeneratedContent(
-          geminiResult.content,
-          contentType
-        );
+      // If we have a saved record, update it with processed content
+      if (savedRecordId) {
+        try {
+          const updateResponse = await fetch(
+            `/api/source-content/${savedRecordId}/process`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                processed_text: textResult.processedText,
+                word_count: textResult.wordCount,
+                processing_time_ms: textResult.processingTime,
+              }),
+            }
+          );
 
-        const analysisText = `Content Generation Summary:
-- Content Type: ${contentTypeLabel}
-- Generated Items: ${geminiResult.content.length}
-- Processing Time: ${geminiResult.processingTime}ms
-- Text Processing: ${textResult.processingTime}ms
-
-Generated ${contentTypeLabel}:
-${formattedContent}`;
-
-        setAnalysisResults(analysisText);
-        setMessage(
-          `✅ Generated ${geminiResult.content.length} ${contentTypeLabel.toLowerCase()} in ${geminiResult.processingTime}ms`
-        );
-      } else {
-        throw new Error(geminiResult.error || 'Failed to generate content');
+          const updateResult = await updateResponse.json();
+          if (updateResult.success) {
+            setMessage(`✅ Content processed and moved to Analysis Panel!`);
+          }
+        } catch (updateError) {
+          console.error('Failed to update database:', updateError);
+          // Continue with local processing even if DB update fails
+        }
       }
+
+      setMessage(`✅ Content processed and ready for AI generation!`);
     } catch (error) {
       setMessage(
         `❌ Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -194,33 +197,32 @@ ${formattedContent}`;
     setMessage('Saving source content...');
 
     try {
-      // Save to content_items table as raw source material
-      const { data, error } = await supabase
-        .from('content_items')
-        .insert({
-          title: `Source Material - ${new Date().toLocaleDateString()}`,
-          content: content.trim(),
-          excerpt: content.trim().substring(0, 200) + '...',
-          status: 'draft',
-          category_id: null, // No category for source material
-          author_id: null, // Will be set by RLS if authenticated
-          raw_text: content.trim(), // Store the raw text for trivia generation
-          metadata: {
-            type: 'source_material',
-            created_for: 'trivia_games',
-            word_count: content.trim().split(/\s+/).length,
-            created_at: new Date().toISOString(),
-          },
-        })
-        .select()
-        .single();
+      // Use API route to save to source_content table
+      const response = await fetch('/api/source-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          original_text: content.trim(),
+        }),
+      });
 
-      if (error) {
-        throw error;
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save content');
       }
 
-      setMessage(`✅ Source content saved successfully! (ID: ${data.id})`);
-      setContent(''); // Clear the form
+      setMessage(
+        `✅ Source content saved successfully! (ID: ${result.data.id})`
+      );
+      setSaveSuccess(true);
+      setSavedRecordId(result.data.id); // Store the record ID for processing
+      // Keep content in textarea for processing
+
+      // Hide success checkmark after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       setMessage(
         `❌ Error saving content: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -233,10 +235,13 @@ ${formattedContent}`;
   const clearContent = () => {
     setContent('');
     setMessage('');
+    setSaveSuccess(false);
     setProcessingSteps(getInitialSteps());
     setProcessingResult(null);
     setAnalysisResults('');
     setContentType('trivia_questions');
+    setSavedRecordId(null);
+    setIsGenerating(false);
   };
 
   const handleSaveAnalysis = async () => {
@@ -249,33 +254,26 @@ ${formattedContent}`;
     setMessage('Saving analysis results...');
 
     try {
-      // Save analysis results to database
-      const { data, error } = await supabase
-        .from('content_items')
-        .insert({
-          title: `Analysis Results - ${new Date().toLocaleDateString()}`,
-          content: analysisResults.trim(),
-          excerpt: analysisResults.trim().substring(0, 200) + '...',
-          status: 'draft',
-          category_id: null,
-          author_id: null,
-          raw_text: analysisResults.trim(),
-          metadata: {
-            type: 'analysis_results',
-            source_content_id: processingResult ? 'linked_to_source' : null,
-            created_for: 'trivia_games',
-            analysis_type: 'text_processing',
-            created_at: new Date().toISOString(),
-          },
-        })
-        .select()
-        .single();
+      // Use API route to save analysis results
+      const response = await fetch('/api/source-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          original_text: analysisResults.trim(),
+        }),
+      });
 
-      if (error) {
-        throw error;
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save analysis');
       }
 
-      setMessage(`✅ Analysis results saved successfully! (ID: ${data.id})`);
+      setMessage(
+        `✅ Analysis results saved successfully! (ID: ${result.data.id})`
+      );
     } catch (error) {
       setMessage(
         `❌ Error saving analysis: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -288,6 +286,84 @@ ${formattedContent}`;
   const clearAnalysisResults = () => {
     setAnalysisResults('');
     setMessage('');
+  };
+
+  const handleGenerateContent = async () => {
+    if (!analysisResults.trim()) {
+      setMessage(
+        'Please process content first or add some text to the Analysis Panel.'
+      );
+      return;
+    }
+
+    setIsGenerating(true);
+    setMessage('Generating content with Gemini...');
+
+    try {
+      console.log('Starting Gemini generation...');
+      console.log('Content type:', contentType);
+      console.log('Analysis results length:', analysisResults.trim().length);
+
+      const contentTypeLabel =
+        contentTypes.find(ct => ct.value === contentType)?.label || contentType;
+
+      console.log('Calling generateContent...');
+      const geminiResult = await generateContent(
+        analysisResults.trim(),
+        contentType,
+        5
+      );
+
+      console.log('Gemini result:', geminiResult);
+
+      if (geminiResult.success) {
+        console.log('Gemini generation successful!');
+        // Format the generated content for display
+        const formattedContent = formatGeneratedContent(
+          geminiResult.content,
+          contentType
+        );
+
+        const analysisText = `Content Generation Summary:
+- Content Type: ${contentTypeLabel}
+- Generated Items: ${geminiResult.content.length}
+- Processing Time: ${geminiResult.processingTime}ms
+
+Generated ${contentTypeLabel}:
+${formattedContent}`;
+
+        setAnalysisResults(analysisText);
+        setMessage(
+          `✅ Generated ${geminiResult.content.length} ${contentTypeLabel.toLowerCase()} in ${geminiResult.processingTime}ms`
+        );
+      } else {
+        console.error('Gemini generation failed:', geminiResult.error);
+        throw new Error(geminiResult.error || 'Failed to generate content');
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+      setMessage(
+        `❌ Generation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const testGemini = async () => {
+    setGeminiStatus('Testing Gemini connection...');
+    try {
+      const result = await testGeminiConnection();
+      if (result.success) {
+        setGeminiStatus('✅ Gemini API is working!');
+      } else {
+        setGeminiStatus(`❌ Gemini error: ${result.error}`);
+      }
+    } catch (error) {
+      setGeminiStatus(
+        `❌ Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   };
 
   const wordCount = content
@@ -307,8 +383,9 @@ ${formattedContent}`;
               Source Creator
             </h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Capture raw text content for future trivia games. Paste your
-              source material here and save it as foundation content.
+              Capture raw text content, process it, and generate AI content.
+              Paste your source material, clean it, then create specialized
+              content for Onlyhockey.com.
             </p>
           </div>
           <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -341,34 +418,6 @@ ${formattedContent}`;
               </div>
             </div>
 
-            {/* Content Type Selector */}
-            <div className="mb-4">
-              <label
-                htmlFor="contentType"
-                className="block text-sm/6 font-medium text-gray-900 dark:text-white"
-              >
-                Content Type
-              </label>
-              <div className="mt-2 grid grid-cols-1">
-                <select
-                  id="contentType"
-                  name="contentType"
-                  value={contentType}
-                  onChange={e => setContentType(e.target.value as ContentType)}
-                  className="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm/6 dark:bg-gray-800 dark:text-white dark:outline-gray-600 dark:focus-visible:outline-indigo-500"
-                >
-                  {contentTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label} - {type.description}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDownIcon
-                  aria-hidden="true"
-                  className="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"
-                />
-              </div>
-            </div>
             {/* Text Area */}
             <div className="mb-4">
               <textarea
@@ -384,6 +433,53 @@ ${formattedContent}`;
 
             {/* Action Buttons */}
             <div className="flex items-center space-x-4">
+              <button
+                type="button"
+                onClick={handlePost}
+                disabled={isProcessing || isPosting || !content.trim()}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isPosting && (
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                )}
+                {saveSuccess && (
+                  <svg
+                    className="mr-2 h-4 w-4 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+                {isPosting
+                  ? 'Saving...'
+                  : saveSuccess
+                    ? 'Saved!'
+                    : 'Save Source'}
+              </button>
+
               <button
                 type="button"
                 onClick={handleProcess}
@@ -416,11 +512,182 @@ ${formattedContent}`;
 
               <button
                 type="button"
-                onClick={handlePost}
-                disabled={isProcessing || isPosting || !content.trim()}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                onClick={clearContent}
+                disabled={isProcessing || isPosting}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
               >
-                {isPosting && (
+                Clear
+              </button>
+            </div>
+
+            {/* Processing Steps - Always visible */}
+            <div className="mt-6 border-t border-gray-200 pt-6">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Processing Steps
+              </h4>
+              <div className="space-y-1">
+                {processingSteps.map(step => (
+                  <div key={step.id} className="flex items-center space-x-2">
+                    <div
+                      className={`w-3 h-3 rounded-full flex items-center justify-center ${
+                        step.completed
+                          ? 'bg-green-500'
+                          : step.processing
+                            ? 'bg-yellow-500'
+                            : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    >
+                      {step.completed && (
+                        <svg
+                          className="w-2 h-2 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                      {step.processing && (
+                        <svg
+                          className="w-2 h-2 text-white animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      {step.name}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Record inserted acknowledgement step */}
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`w-3 h-3 rounded-full flex items-center justify-center ${
+                      saveSuccess
+                        ? 'bg-green-500'
+                        : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  >
+                    {saveSuccess && (
+                      <svg
+                        className="w-2 h-2 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    Record inserted acknowledgement
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel - Analysis Results */}
+        <div>
+          <div className="bg-white rounded-lg shadow-sm border-2 border-dashed border-gray-300 p-6 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Analysis Results
+              </h2>
+              <div className="text-xs text-gray-500">
+                {analysisResults.length} chars
+              </div>
+            </div>
+
+            {/* Content Type Selector */}
+            <div className="mb-4">
+              <label
+                htmlFor="contentType"
+                className="block text-sm/6 font-medium text-gray-900 dark:text-white"
+              >
+                Content Type
+              </label>
+              <div className="mt-2 grid grid-cols-1">
+                <select
+                  id="contentType"
+                  name="contentType"
+                  value={contentType}
+                  onChange={e => setContentType(e.target.value as ContentType)}
+                  className="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm/6 dark:bg-gray-800 dark:text-white dark:outline-gray-600 dark:focus-visible:outline-indigo-500"
+                >
+                  {contentTypes.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label} - {type.description}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDownIcon
+                  aria-hidden="true"
+                  className="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"
+                />
+              </div>
+            </div>
+
+            {/* Editable Analysis Results */}
+            <div className="flex-1 mb-4">
+              <textarea
+                id="analysisResults"
+                name="analysisResults"
+                rows={12}
+                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500"
+                placeholder="Analysis results will appear here after processing. You can edit and refine the content before saving."
+                value={analysisResults}
+                onChange={e => setAnalysisResults(e.target.value)}
+              />
+            </div>
+
+            {/* Gemini Status */}
+            {geminiStatus && (
+              <div className="mb-4 p-2 text-xs rounded bg-gray-100 dark:bg-gray-800">
+                {geminiStatus}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-4">
+              <button
+                type="button"
+                onClick={testGemini}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+              >
+                Test Gemini
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGenerateContent}
+                disabled={isGenerating || !analysisResults.trim()}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isGenerating && (
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                     fill="none"
@@ -441,123 +708,9 @@ ${formattedContent}`;
                     ></path>
                   </svg>
                 )}
-                {isPosting ? 'Saving...' : 'Save Source'}
+                {isGenerating ? 'Generating...' : 'Generate Content'}
               </button>
 
-              <button
-                type="button"
-                onClick={clearContent}
-                disabled={isProcessing || isPosting}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Panel - Analysis Results */}
-        <div>
-          <div className="bg-white rounded-lg shadow-sm border-2 border-dashed border-gray-300 p-6 h-full flex flex-col">
-            {/* Analysis QAB Section */}
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                Analysis QAB
-              </h2>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-3">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Content analysis and quality assessment will appear here after
-                  processing.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Analysis Results
-              </h2>
-              <div className="text-xs text-gray-500">
-                {analysisResults.length} chars
-              </div>
-            </div>
-
-            {/* Processing Steps - Compact View */}
-            {(isProcessing || processingResult) && (
-              <div className="mb-4">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  Processing Steps
-                </h3>
-                <div className="space-y-1">
-                  {processingSteps.map(step => (
-                    <div key={step.id} className="flex items-center space-x-2">
-                      <div
-                        className={`w-3 h-3 rounded-full flex items-center justify-center ${
-                          step.completed
-                            ? 'bg-green-500'
-                            : step.processing
-                              ? 'bg-yellow-500'
-                              : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      >
-                        {step.completed && (
-                          <svg
-                            className="w-2 h-2 text-white"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
-                        {step.processing && (
-                          <svg
-                            className="w-2 h-2 text-white animate-spin"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {step.name}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Editable Analysis Results */}
-            <div className="flex-1 mb-4">
-              <textarea
-                id="analysisResults"
-                name="analysisResults"
-                rows={12}
-                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500"
-                placeholder="Analysis results will appear here after processing. You can edit and refine the content before saving."
-                value={analysisResults}
-                onChange={e => setAnalysisResults(e.target.value)}
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-4">
               <button
                 type="button"
                 onClick={handleSaveAnalysis}
@@ -591,7 +744,9 @@ ${formattedContent}`;
               <button
                 type="button"
                 onClick={clearAnalysisResults}
-                disabled={isSavingAnalysis || !analysisResults.trim()}
+                disabled={
+                  isSavingAnalysis || isGenerating || !analysisResults.trim()
+                }
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
               >
                 Clear Results
@@ -648,19 +803,28 @@ ${formattedContent}`;
               4
             </span>
             <p>
-              Click &quot;Process&quot; to clean text and generate content with
-              Gemini AI
+              Click &quot;Process&quot; to clean text and move it to Analysis
+              Panel
             </p>
           </div>
           <div className="flex items-start space-x-2">
             <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
               5
             </span>
-            <p>Review and edit the generated content in the right panel</p>
+            <p>Select Content Type in the Analysis Panel</p>
           </div>
           <div className="flex items-start space-x-2">
             <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
               6
+            </span>
+            <p>
+              Click &quot;Generate Content&quot; to create AI content with
+              Gemini
+            </p>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="flex-shrink-0 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              7
             </span>
             <p>
               Click &quot;Save Analysis&quot; to store generated content, or

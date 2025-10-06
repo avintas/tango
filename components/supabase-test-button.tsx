@@ -27,7 +27,7 @@ export default function SupabaseTestButton() {
     try {
       // Test 1: Basic connection
       const { data: basicData, error: basicError } = await supabase
-        .from('content_categories')
+        .from('source_content')
         .select('count')
         .limit(1);
 
@@ -37,7 +37,7 @@ export default function SupabaseTestButton() {
 
       // Test 2: Test RLS (if enabled)
       const { data: rlsData, error: rlsError } = await supabase
-        .from('content_items')
+        .from('source_content')
         .select('count')
         .limit(1);
 
@@ -45,7 +45,7 @@ export default function SupabaseTestButton() {
 
       // Test 3: Check if we can insert (test permissions)
       const { error: insertError } = await supabase
-        .from('content_categories')
+        .from('source_content')
         .select('id')
         .limit(1);
 
@@ -55,7 +55,7 @@ export default function SupabaseTestButton() {
       if (rlsError) {
         details += `⚠️ RLS might be enabled (expected behavior)\n`;
       } else {
-        details += `✅ Content items table accessible\n`;
+        details += `✅ Source content table accessible\n`;
       }
 
       details += `📊 Response time: ${responseTime}ms`;
