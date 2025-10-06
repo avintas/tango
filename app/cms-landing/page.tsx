@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import SupabaseStatus from '@/components/supabase-status';
 
-const navigation = [];
+const navigation: { name: string; href: string }[] = [];
 
 export default function CMSLanding() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

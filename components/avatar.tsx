@@ -54,7 +54,14 @@ export function Avatar({
           </text>
         </svg>
       )}
-      {src && <img className="size-full" src={src} alt={alt} />}
+      {src && (
+        <img
+          className="size-full"
+          src={src}
+          alt={alt}
+          // eslint-disable-next-line @next/next/no-img-element
+        />
+      )}
     </span>
   );
 }
