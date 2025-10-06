@@ -5,12 +5,45 @@ import { Button } from '@/components/button';
 import { Input } from '@/components/input';
 import { Text } from '@/components/text';
 
+// Define types for the mock data
+type ContentItem = {
+  id: string;
+  title: string;
+  content: string;
+  status: string;
+  created_at: string;
+  word_count: number;
+};
+
+type MediaItem = {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  uploaded_at: string;
+  url: string;
+};
+
+type CategoryItem = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  color: string;
+  content_count: number;
+  created_at: string;
+};
+
 export default function ContentEditor() {
   const [activeTab, setActiveTab] = useState('content-library');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedContent, setSelectedContent] = useState(null);
-  const [selectedMedia, setSelectedMedia] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
+    null
+  );
+  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryItem | null>(
+    null
+  );
 
   const tabs = [
     { id: 'content-library', name: 'Content Library', icon: '📚' },

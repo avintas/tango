@@ -7,7 +7,7 @@ import { Text } from '@/components/text';
 
 interface TestResult {
   test: string;
-  status: 'success' | 'error' | 'pending';
+  status: 'success' | 'error' | 'pending' | 'skipped';
   message: string;
   data?: any;
 }
@@ -143,57 +143,19 @@ export default function RLSTest() {
       // Test 6: Test media access (skipped - no media table)
       addResult('Media Access', 'skipped', 'Media library not implemented yet');
 
-      // Test 7: Test admin-only access (if user is admin)
-      if (
-        userProfile?.role &&
-        ['admin', 'super_admin'].includes(userProfile.role)
-      ) {
-        addResult('Admin Access', 'pending', 'Testing admin-only access...');
+      // Test 7: Test admin-only access (skipped - no user management system)
+      addResult(
+        'Admin Access',
+        'skipped',
+        'User management system not implemented yet'
+      );
 
-        // Skip user management test - no cms_users table
-        const allUsers = null;
-        const usersError = null;
-
-        if (usersError) {
-          addResult(
-            'Admin Access',
-            'error',
-            `Admin access error: ${usersError.message}`
-          );
-        } else {
-          addResult(
-            'Admin Access',
-            'success',
-            `Can access ${allUsers?.length || 0} user records`,
-            allUsers
-          );
-        }
-
-        // Test activity logs
-        addResult('Activity Logs', 'pending', 'Testing activity log access...');
-        const { data: activityLogs, error: activityError } = await supabase
-          .from('cms_activity_log')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (activityError) {
-          addResult(
-            'Activity Logs',
-            'error',
-            `Activity log error: ${activityError.message}`
-          );
-        } else {
-          addResult(
-            'Activity Logs',
-            'success',
-            `Can access ${activityLogs?.length || 0} activity logs`,
-            activityLogs
-          );
-        }
-      } else {
-        addResult('Admin Access', 'pending', 'Skipped - User is not admin');
-      }
+      // Test activity logs (skipped - no activity log table)
+      addResult(
+        'Activity Logs',
+        'skipped',
+        'Activity logging system not implemented yet'
+      );
     } catch (error) {
       addResult(
         'General Error',
