@@ -17,6 +17,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if environment variables are set
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        {
+          error: 'Database configuration error',
+          details: 'Missing Supabase environment variables',
+          environment: {
+            hasSupabaseUrl: !!supabaseUrl,
+            hasServiceKey: !!supabaseServiceKey,
+          },
+        },
+        { status: 500 }
+      );
+    }
+
     // Create Supabase client with service role key for server-side operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

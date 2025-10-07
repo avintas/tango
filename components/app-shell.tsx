@@ -41,17 +41,15 @@ const navigation = [
     href: '/cms/source-processor',
     icon: ArchiveBoxIcon,
   },
-  { name: 'Content Editor', href: '/cms/content', icon: DocumentTextIcon },
   { name: 'Users', href: '/cms/users', icon: UserGroupIcon },
   { name: 'Reports', href: '/cms/reports', icon: ChartBarIcon },
   { name: 'Settings', href: '/cms/settings', icon: Cog6ToothIcon },
 ];
 
 const quickActions = [
-  { id: 1, name: 'Create Content', href: '/cms/content', initial: 'C' },
-  { id: 2, name: 'Source Creator', href: '/cms/source', initial: 'S' },
-  { id: 3, name: 'View Landing', href: '/cms-landing', initial: 'L' },
-  { id: 4, name: 'Home Page', href: '/', initial: 'H' },
+  { id: 1, name: 'Source Creator', href: '/cms/source', initial: 'S' },
+  { id: 2, name: 'View Landing', href: '/cms-landing', initial: 'L' },
+  { id: 3, name: 'Home Page', href: '/', initial: 'H' },
 ];
 
 function classNames(...classes: string[]) {
