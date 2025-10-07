@@ -213,7 +213,7 @@ ${formattedContent}`;
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="space-y-6">
         {/* Content Input */}
         <div className="space-y-4">
           <div>
