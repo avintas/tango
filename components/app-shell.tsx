@@ -20,6 +20,7 @@ import {
   ChartBarIcon,
   ClipboardDocumentIcon,
   Cog6ToothIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import Link from 'next/link';
@@ -29,6 +30,11 @@ import clsx from 'clsx';
 const navigation = [
   { name: 'Dashboard', href: '/cms', icon: HomeIcon },
   { name: 'Source Creator', href: '/cms/source', icon: ClipboardDocumentIcon },
+  {
+    name: 'Source Analysis',
+    href: '/cms/source/analysis',
+    icon: MagnifyingGlassIcon,
+  },
   { name: 'Content Editor', href: '/cms/content', icon: DocumentTextIcon },
   { name: 'Users', href: '/cms/users', icon: UserGroupIcon },
   { name: 'Reports', href: '/cms/reports', icon: ChartBarIcon },
