@@ -102,6 +102,8 @@ export default function SourceCreator() {
   const [generatedContent, setGeneratedContent] = useState('');
   const [message, setMessage] = useState('');
   const [geminiStatus, setGeminiStatus] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<string>('');
 
   const testGemini = async () => {
     setGeminiStatus('Testing Gemini API...');
@@ -125,6 +127,47 @@ export default function SourceCreator() {
       setGeminiStatus(
         `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+    }
+  };
+
+  const handleSave = async () => {
+    if (!content.trim()) {
+      setSaveStatus('❌ Please enter some content to save.');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveStatus('Saving to Supabase...');
+
+    try {
+      const response = await fetch('/api/source-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: content.trim(),
+          contentType: contentType,
+          wordCount: wordCount,
+          characterCount: content.length,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSaveStatus('✅ Content saved successfully to Supabase!');
+        // Clear the status message after 3 seconds
+        setTimeout(() => setSaveStatus(''), 3000);
+      } else {
+        setSaveStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      setSaveStatus(
+        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -241,7 +284,7 @@ ${formattedContent}`;
             <div className="flex-1 mb-4">
               <textarea
                 id="content"
-                className="w-full h-full min-h-[200px] rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white resize-none"
+                className="w-full h-full min-h-[200px] rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
                 placeholder=""
                 value={content}
                 onChange={e => setContent(e.target.value)}
@@ -252,12 +295,11 @@ ${formattedContent}`;
             <div className="flex items-center space-x-3">
               <button
                 type="button"
-                onClick={() => {
-                  /* TODO: Implement save functionality */
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                onClick={handleSave}
+                disabled={isSaving || !content.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                SAVE
+                {isSaving ? 'SAVING...' : 'SAVE'}
               </button>
               <button
                 type="button"
@@ -284,7 +326,7 @@ ${formattedContent}`;
 
         {/* Top-Right: Instructions Panel */}
         <div className="flex flex-col">
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               INSTRUCTIONS
             </h3>
@@ -347,13 +389,31 @@ ${formattedContent}`;
 
         {/* Bottom-Left: Processing Monitor */}
         <div className="flex flex-col">
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Processing Monitor
             </h3>
 
             <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4 h-full overflow-y-auto">
-              {isGenerating ? (
+              {isSaving ? (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Saving to Supabase...
+                    </span>
+                  </div>
+                </div>
+              ) : saveStatus ? (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {saveStatus}
+                    </span>
+                  </div>
+                </div>
+              ) : isGenerating ? (
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -388,7 +448,8 @@ ${formattedContent}`;
                 </div>
               ) : (
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Processing status will appear here when you click PROCESS...
+                  Processing status will appear here when you click SAVE or
+                  PROCESS...
                 </div>
               )}
             </div>
@@ -397,7 +458,7 @@ ${formattedContent}`;
 
         {/* Bottom-Right: Stats Panel */}
         <div className="flex flex-col">
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               STATS
             </h3>

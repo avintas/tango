@@ -1,90 +1,97 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { original_text } = body;
+    const { content, contentType, wordCount, characterCount } =
+      await request.json();
 
-    if (!original_text?.trim()) {
+    // Validate required fields
+    if (!content || !contentType) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'original_text is required',
-        },
+        { error: 'Content and content type are required' },
         { status: 400 }
       );
     }
 
-    // Use service role key for server-side operations
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
+    // Create Supabase client with service role key for server-side operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Insert the source content into the database
     const { data, error } = await supabase
       .from('source_content')
-      .insert({
-        original_text: original_text,
-      })
+      .insert([
+        {
+          content: content,
+          content_type: contentType,
+          word_count: wordCount || 0,
+          character_count: characterCount || content.length,
+          created_at: new Date().toISOString(),
+        },
+      ])
       .select()
       .single();
 
     if (error) {
-      throw new Error(`Database error: ${error.message}`);
+      console.error('Supabase error:', error);
+      return NextResponse.json(
+        { error: 'Failed to save content to database', details: error.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      data,
-      message: 'Source content inserted successfully',
+      data: data,
+      message: 'Source content saved successfully',
     });
   } catch (error) {
+    console.error('Save error:', error);
     return NextResponse.json(
       {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Use service role key for server-side operations
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
+    // Create Supabase client with service role key for server-side operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Fetch all source content
     const { data, error } = await supabase
       .from('source_content')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw new Error(`Database error: ${error.message}`);
+      console.error('Supabase error:', error);
+      return NextResponse.json(
+        {
+          error: 'Failed to fetch content from database',
+          details: error.message,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      data,
-      count: data?.length || 0,
+      data: data,
     });
   } catch (error) {
+    console.error('Fetch error:', error);
     return NextResponse.json(
       {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
