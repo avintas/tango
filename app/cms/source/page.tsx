@@ -213,36 +213,17 @@ ${formattedContent}`;
         </p>
       </div>
 
-      <div className="space-y-6">
-        {/* Content Input */}
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="content"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Hockey Content
-            </label>
-            <textarea
-              id="content"
-              rows={12}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
-              placeholder="Paste your hockey content here (articles, stats, stories, etc.)..."
-              value={content}
-              onChange={e => setContent(e.target.value)}
-            />
-            <div className="mt-2 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-              <span>{wordCount} words</span>
-              <span>{content.length} characters</span>
-            </div>
-          </div>
+      {/* 2x2 Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
+        {/* Top-Left: Source Content Panel */}
+        <div className="flex flex-col space-y-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Source Content
+            </h3>
 
-          {/* Content Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Content Type
-            </label>
-            <div className="mt-1">
+            {/* Content Type Selection */}
+            <div className="mb-4">
               <select
                 value={contentType}
                 onChange={e => setContentType(e.target.value as ContentType)}
@@ -255,28 +236,37 @@ ${formattedContent}`;
                 ))}
               </select>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-4">
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isGenerating || !content.trim()}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-gray-800"
-            >
-              {isGenerating ? 'Generating...' : 'Generate Content'}
-            </button>
+            {/* Text Area */}
+            <div className="flex-1 mb-4">
+              <textarea
+                id="content"
+                className="w-full h-full min-h-[200px] rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white resize-none"
+                placeholder=""
+                value={content}
+                onChange={e => setContent(e.target.value)}
+              />
+            </div>
 
-            <button
-              type="button"
-              onClick={testGemini}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-offset-gray-800"
-            >
-              Test Gemini
-            </button>
-
-            {content && (
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  /* TODO: Implement save functionality */
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                SAVE
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={isGenerating || !content.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                PROCESS
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -284,41 +274,197 @@ ${formattedContent}`;
                   setGeneratedContent('');
                   setMessage('');
                 }}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-offset-gray-800"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
               >
-                Clear
+                CLEAR
               </button>
-            )}
-          </div>
-
-          {/* Gemini Status */}
-          {geminiStatus && (
-            <div className="mb-4 p-2 text-xs rounded bg-gray-100 dark:bg-gray-800">
-              {geminiStatus}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Generated Content */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Generated Content
-            </label>
-            <div className="mt-1 min-h-[400px] rounded-md border border-gray-300 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-800">
-              {generatedContent ? (
-                <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100">
-                  {generatedContent}
-                </pre>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Generated content will appear here...
+        {/* Top-Right: Instructions Panel */}
+        <div className="flex flex-col">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              INSTRUCTIONS
+            </h3>
+
+            <div className="space-y-3 mb-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  1
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Paste your hockey content in the text area
                 </p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  2
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Select the content type you want to generate
+                </p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  3
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Click PROCESS to generate structured content
+                </p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  4
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Review and use the generated content
+                </p>
+              </div>
+            </div>
+
+            {/* Scrollable Content Area */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4 h-32 overflow-y-auto">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="mb-2">
+                  <strong>Content Types:</strong>
+                </p>
+                <ul className="space-y-1 text-xs">
+                  <li>• Trivia Questions - Interactive Q&A for games</li>
+                  <li>• Factoids - Quick, interesting facts</li>
+                  <li>• Quotes - Player/coach motivational quotes</li>
+                  <li>• Statistics - Data and numbers</li>
+                  <li>• Stories - Narrative content</li>
+                  <li>• Rules - Rule explanations</li>
+                  <li>• Achievements - Player/team accomplishments</li>
+                  <li>• History - Historical content</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom-Left: Processing Monitor */}
+        <div className="flex flex-col">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Processing Monitor
+            </h3>
+
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4 h-full overflow-y-auto">
+              {isGenerating ? (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Connecting to Gemini API...
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Processing content...
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Generating {contentType.replace('_', ' ')}...
+                    </span>
+                  </div>
+                </div>
+              ) : generatedContent ? (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Content generated successfully!
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {message}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Processing status will appear here when you click PROCESS...
+                </div>
               )}
             </div>
           </div>
         </div>
+
+        {/* Bottom-Right: Stats Panel */}
+        <div className="flex flex-col">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              STATS
+            </h3>
+
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4 h-full">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Words:
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {wordCount}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Characters:
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {content.length}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Content Type:
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {contentTypes.find(ct => ct.value === contentType)?.label}
+                  </span>
+                </div>
+                {generatedContent && (
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Generated Items:
+                      </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {
+                          generatedContent
+                            .split('\n\n')
+                            .filter(item => item.trim()).length
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Generated Content - Full Width Below Grid */}
+      {generatedContent && (
+        <div className="mt-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Generated Content
+            </h3>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4 max-h-96 overflow-y-auto">
+              <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100">
+                {generatedContent}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status Message */}
       {message && (
@@ -332,28 +478,6 @@ ${formattedContent}`;
           </div>
         </div>
       )}
-
-      {/* Instructions */}
-      <div className="rounded-md bg-gray-50 p-4 dark:bg-gray-800">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-          How to use Source Creator:
-        </h3>
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <ol className="list-decimal list-inside space-y-1">
-            <li>Paste your hockey content in the text area</li>
-            <li>Select the type of content you want to generate</li>
-            <li>
-              Click &quot;Generate Content&quot; to create structured content
-              with AI
-            </li>
-            <li>Review and use the generated content</li>
-          </ol>
-        </div>
-        <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">
-          <strong>Single Action Principle:</strong> One form, one action, one
-          focus - create structured content directly from your source material.
-        </p>
-      </div>
     </div>
   );
 }
