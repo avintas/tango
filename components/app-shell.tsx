@@ -21,6 +21,7 @@ import {
   ClipboardDocumentIcon,
   Cog6ToothIcon,
   MagnifyingGlassIcon,
+  ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import Link from 'next/link';
@@ -34,6 +35,11 @@ const navigation = [
     name: 'Source Analysis',
     href: '/cms/source/analysis',
     icon: MagnifyingGlassIcon,
+  },
+  {
+    name: 'Source Processor',
+    href: '/cms/source-processor',
+    icon: ArchiveBoxIcon,
   },
   { name: 'Content Editor', href: '/cms/content', icon: DocumentTextIcon },
   { name: 'Users', href: '/cms/users', icon: UserGroupIcon },
