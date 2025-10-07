@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ContentType, ContentGenerationResult } from '@/lib/gemini';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
@@ -49,44 +49,44 @@ Correct Answer: ${item.correct_answer}
 Incorrect Answers: ${item.incorrect_answers.join(', ')}
 Difficulty: ${item.difficulty}
 Category: ${item.category}
-${item.explanation ? `Explanation: ${item.explanation}` : ''}`;
+   ${item.explanation ? `Explanation: ${item.explanation}` : ''}`;
         case 'factoids':
           return `Fact ${index + 1}: ${item.fact}
 Category: ${item.category}
 Difficulty: ${item.difficulty}
-${item.source ? `Source: ${item.source}` : ''}`;
+   ${item.source ? `Source: ${item.source}` : ''}`;
         case 'quotes':
           return `Quote ${index + 1}: &quot;${item.quote}&quot;
 Speaker: ${item.speaker}
-${item.context ? `Context: ${item.context}` : ''}
-Category: ${item.category}`;
+   ${item.context ? `Context: ${item.context}` : ''}
+   Category: ${item.category}`;
         case 'statistics':
           return `Stat ${index + 1}: ${item.statistic}
 Value: ${item.value}
-Context: ${item.context}
-Category: ${item.category}`;
+   Context: ${item.context}
+   Category: ${item.category}`;
         case 'stories':
           return `Story ${index + 1}: ${item.title}
-${item.story}
-Category: ${item.category}
-Key Points: ${item.key_points.join(', ')}`;
+   ${item.story}
+   Category: ${item.category}
+   Key Points: ${item.key_points.join(', ')}`;
         case 'rules':
           return `Rule ${index + 1}: ${item.rule}
 Explanation: ${item.explanation}
-Examples: ${item.examples.join(', ')}
-Category: ${item.category}`;
+   Examples: ${item.examples.join(', ')}
+   Category: ${item.category}`;
         case 'achievements':
           return `Achievement ${index + 1}: ${item.achievement}
 Player/Team: ${item.player_or_team}
 ${item.year ? `Year: ${item.year}` : ''}
-Context: ${item.context}
-Category: ${item.category}`;
+   Context: ${item.context}
+   Category: ${item.category}`;
         case 'history':
           return `Event ${index + 1}: ${item.event}
 Date: ${item.date}
-Significance: ${item.significance}
-Details: ${item.details}
-Category: ${item.category}`;
+   Significance: ${item.significance}
+   Details: ${item.details}
+   Category: ${item.category}`;
         default:
           return `Item ${index + 1}: ${JSON.stringify(item, null, 2)}`;
       }
@@ -94,16 +94,38 @@ Category: ${item.category}`;
     .join('\n\n');
 }
 
+// Utility function for consistent error handling
+const handleError = (error: unknown, defaultMessage: string): string => {
+  return error instanceof Error ? error.message : defaultMessage;
+};
+
 export default function SourceCreator() {
   const [content, setContent] = useState('');
   const [contentType, setContentType] =
     useState<ContentType>('trivia_questions');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState('');
-  const [message, setMessage] = useState('');
+  const [numItems, setNumItems] = useState(5);
+
+  // Consolidated state objects for better organization
+  const [generationState, setGenerationState] = useState({
+    isGenerating: false,
+    message: '',
+    content: '',
+  });
+
+  const [saveState, setSaveState] = useState({
+    isSaving: false,
+    status: '',
+  });
+
   const [geminiStatus, setGeminiStatus] = useState<string>('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<string>('');
+
+  // Memoized word count calculation for performance
+  const wordCount = useMemo(() => {
+    return content
+      .trim()
+      .split(/\s+/)
+      .filter(word => word.length > 0).length;
+  }, [content]);
 
   const testGemini = async () => {
     setGeminiStatus('Testing Gemini API...');
@@ -121,23 +143,23 @@ export default function SourceCreator() {
       if (result.success) {
         setGeminiStatus('✅ Gemini API is working!');
       } else {
-        setGeminiStatus(`❌ ${result.error || 'Test failed'}`);
+        setGeminiStatus(`❌ ${handleError(result.error, 'Test failed')}`);
       }
     } catch (error) {
-      setGeminiStatus(
-        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      setGeminiStatus(`❌ Error: ${handleError(error, 'Unknown error')}`);
     }
   };
 
   const handleSave = async () => {
     if (!content.trim()) {
-      setSaveStatus('❌ Please enter some content to save.');
+      setSaveState({
+        isSaving: false,
+        status: '❌ Please enter some content to save.',
+      });
       return;
     }
 
-    setIsSaving(true);
-    setSaveStatus('Saving to Supabase...');
+    setSaveState({ isSaving: true, status: 'Saving to Supabase...' });
 
     try {
       const response = await fetch('/api/source-content', {
@@ -156,29 +178,41 @@ export default function SourceCreator() {
       const result = await response.json();
 
       if (result.success) {
-        setSaveStatus('✅ Content saved successfully to Supabase!');
+        setSaveState({
+          isSaving: false,
+          status: '✅ Content saved successfully to Supabase!',
+        });
         // Clear the status message after 3 seconds
-        setTimeout(() => setSaveStatus(''), 3000);
+        setTimeout(() => setSaveState({ isSaving: false, status: '' }), 3000);
       } else {
-        setSaveStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
+        setSaveState({
+          isSaving: false,
+          status: `❌ Save failed: ${handleError(result.error, 'Unknown error')}`,
+        });
       }
     } catch (error) {
-      setSaveStatus(
-        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setIsSaving(false);
+      setSaveState({
+        isSaving: false,
+        status: `❌ Error: ${handleError(error, 'Unknown error')}`,
+      });
     }
   };
 
   const handleGenerate = async () => {
     if (!content.trim()) {
-      setMessage('Please enter some content to generate from.');
+      setGenerationState({
+        isGenerating: false,
+        message: 'Please enter some content to generate from.',
+        content: '',
+      });
       return;
     }
 
-    setIsGenerating(true);
-    setMessage('Generating content with Gemini...');
+    setGenerationState({
+      isGenerating: true,
+      message: 'Generating content with Gemini...',
+      content: '',
+    });
 
     try {
       console.log('Starting Gemini generation...');
@@ -197,7 +231,7 @@ export default function SourceCreator() {
         body: JSON.stringify({
           content: content,
           contentType: contentType,
-          numItems: 5,
+          numItems: numItems,
         }),
       });
 
@@ -213,36 +247,25 @@ export default function SourceCreator() {
           contentType
         );
 
-        setGeneratedContent(formattedContent);
-        const summaryText = `Content Generation Summary:
-- Content Type: ${contentTypeLabel}
-- Generated Items: ${geminiResult.content.length}
-- Processing Time: ${geminiResult.processingTime}ms
-
-Generated ${contentTypeLabel}:
-${formattedContent}`;
-
-        setMessage(
-          `✅ Generated ${geminiResult.content.length} ${contentTypeLabel.toLowerCase()} in ${geminiResult.processingTime}ms`
-        );
+        const successMessage = `✅ Generated ${geminiResult.content.length} ${contentTypeLabel.toLowerCase()} in ${geminiResult.processingTime}ms`;
+        setGenerationState({
+          isGenerating: false,
+          message: successMessage,
+          content: formattedContent,
+        });
       } else {
         console.error('Gemini generation failed:', geminiResult.error);
         throw new Error(geminiResult.error || 'Failed to generate content');
       }
     } catch (error) {
       console.error('Content generation error:', error);
-      setMessage(
-        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setIsGenerating(false);
+      setGenerationState({
+        isGenerating: false,
+        message: `❌ Error: ${handleError(error, 'Unknown error')}`,
+        content: '',
+      });
     }
   };
-
-  const wordCount = content
-    .trim()
-    .split(/\s+/)
-    .filter(word => word.length > 0).length;
 
   return (
     <div className="space-y-6">
@@ -267,10 +290,18 @@ ${formattedContent}`;
 
             {/* Content Type Selection */}
             <div className="mb-4">
+              <label
+                htmlFor="content-type"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Content Type
+              </label>
               <select
+                id="content-type"
                 value={contentType}
                 onChange={e => setContentType(e.target.value as ContentType)}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+                aria-label="Select content type for generation"
               >
                 {contentTypes.map(type => (
                   <option key={type.value} value={type.value}>
@@ -278,6 +309,26 @@ ${formattedContent}`;
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Number of Items */}
+            <div className="mb-4">
+              <label
+                htmlFor="num-items"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Number of Items
+              </label>
+              <input
+                id="num-items"
+                type="number"
+                min="1"
+                max="20"
+                value={numItems}
+                onChange={e => setNumItems(parseInt(e.target.value) || 5)}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+                aria-label="Number of items to generate"
+              />
             </div>
 
             {/* Text Area */}
@@ -296,25 +347,29 @@ ${formattedContent}`;
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={isSaving || !content.trim()}
+                disabled={saveState.isSaving || !content.trim()}
                 className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSaving ? 'SAVING...' : 'SAVE'}
+                {saveState.isSaving ? 'SAVING...' : 'SAVE'}
               </button>
               <button
                 type="button"
                 onClick={handleGenerate}
-                disabled={isGenerating || !content.trim()}
+                disabled={generationState.isGenerating || !content.trim()}
                 className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                PROCESS
+                {generationState.isGenerating ? 'Generating...' : 'PROCESS'}
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setContent('');
-                  setGeneratedContent('');
-                  setMessage('');
+                  setGenerationState({
+                    isGenerating: false,
+                    message: '',
+                    content: '',
+                  });
+                  setSaveState({ isSaving: false, status: '' });
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
               >
@@ -395,7 +450,7 @@ ${formattedContent}`;
             </h3>
 
             <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4 h-full overflow-y-auto">
-              {isSaving ? (
+              {saveState.isSaving ? (
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -404,16 +459,16 @@ ${formattedContent}`;
                     </span>
                   </div>
                 </div>
-              ) : saveStatus ? (
+              ) : saveState.status ? (
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {saveStatus}
+                      {saveState.status}
                     </span>
                   </div>
                 </div>
-              ) : isGenerating ? (
+              ) : generationState.isGenerating ? (
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -434,7 +489,7 @@ ${formattedContent}`;
                     </span>
                   </div>
                 </div>
-              ) : generatedContent ? (
+              ) : generationState.content ? (
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -443,7 +498,7 @@ ${formattedContent}`;
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {message}
+                    {generationState.message}
                   </div>
                 </div>
               ) : (
@@ -489,7 +544,7 @@ ${formattedContent}`;
                     {contentTypes.find(ct => ct.value === contentType)?.label}
                   </span>
                 </div>
-                {generatedContent && (
+                {generationState.content && (
                   <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -497,7 +552,7 @@ ${formattedContent}`;
                       </span>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {
-                          generatedContent
+                          generationState.content
                             .split('\n\n')
                             .filter(item => item.trim()).length
                         }
@@ -512,7 +567,7 @@ ${formattedContent}`;
       </div>
 
       {/* Generated Content - Full Width Below Grid */}
-      {generatedContent && (
+      {generationState.content && (
         <div className="mt-6">
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -520,21 +575,8 @@ ${formattedContent}`;
             </h3>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-4 max-h-96 overflow-y-auto">
               <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100">
-                {generatedContent}
+                {generationState.content}
               </pre>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Status Message */}
-      {message && (
-        <div className="rounded-md bg-blue-50 p-4 dark:bg-blue-900/20">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                {message}
-              </p>
             </div>
           </div>
         </div>
