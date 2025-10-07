@@ -10,17 +10,13 @@ import {
 import {
   Bars3Icon,
   BellIcon,
-  DocumentTextIcon,
   FolderIcon,
   HomeIcon,
   PhotoIcon,
   TagIcon,
-  UserGroupIcon,
   XMarkIcon,
   ChartBarIcon,
-  ClipboardDocumentIcon,
   Cog6ToothIcon,
-  MagnifyingGlassIcon,
   ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
@@ -30,24 +26,22 @@ import clsx from 'clsx';
 
 const navigation = [
   { name: 'Dashboard', href: '/cms', icon: HomeIcon },
-  { name: 'Source Creator', href: '/cms/source', icon: ClipboardDocumentIcon },
-  {
-    name: 'Source Analysis',
-    href: '/cms/source/analysis',
-    icon: MagnifyingGlassIcon,
-  },
   {
     name: 'Source Processor',
     href: '/cms/source-processor',
     icon: ArchiveBoxIcon,
   },
-  { name: 'Users', href: '/cms/users', icon: UserGroupIcon },
   { name: 'Reports', href: '/cms/reports', icon: ChartBarIcon },
   { name: 'Settings', href: '/cms/settings', icon: Cog6ToothIcon },
 ];
 
 const quickActions = [
-  { id: 1, name: 'Source Creator', href: '/cms/source', initial: 'S' },
+  {
+    id: 1,
+    name: 'Source Processor',
+    href: '/cms/source-processor',
+    initial: 'P',
+  },
   { id: 2, name: 'View Landing', href: '/cms-landing', initial: 'L' },
   { id: 3, name: 'Home Page', href: '/', initial: 'H' },
 ];
