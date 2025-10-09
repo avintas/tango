@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import {
   DocumentTextIcon,
   ChatBubbleLeftRightIcon,
-  QuoteIcon,
+  ChatBubbleOvalLeftIcon,
   NewspaperIcon,
   CogIcon,
   SparklesIcon,
@@ -28,7 +28,7 @@ const contentTypeIcons = {
   article: DocumentTextIcon,
   trivia_multiple_choice: ChatBubbleLeftRightIcon,
   trivia_true_false: ChatBubbleLeftRightIcon,
-  quote: QuoteIcon,
+  quote: ChatBubbleOvalLeftIcon,
   story: BookOpenIcon,
   hugs: HeartIcon,
   lore: SparklesIcon,
