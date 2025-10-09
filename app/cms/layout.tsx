@@ -1,9 +1,17 @@
 import AppShell from '@/components/app-shell';
+import { AuthProvider } from '@/lib/auth-context';
+import ProtectedRoute from '@/components/auth/protected-route';
 
 export default function CMSLayoutWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell title="Tango">{children}</AppShell>;
+  return (
+    <AuthProvider>
+      <ProtectedRoute>
+        <AppShell title="">{children}</AppShell>
+      </ProtectedRoute>
+    </AuthProvider>
+  );
 }

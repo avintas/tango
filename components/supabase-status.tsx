@@ -22,7 +22,7 @@ export default function SupabaseStatus() {
       try {
         // Simple query to test connection
         const { data, error } = await supabase
-          .from('source_content')
+          .from('sourced_text')
           .select('count')
           .limit(1);
 
