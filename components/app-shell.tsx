@@ -7,6 +7,7 @@ import {
   ArchiveBoxIcon,
   ArrowRightOnRectangleIcon,
   TagIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -41,9 +42,39 @@ const navigation = [
 const promptActions = [
   {
     id: 1,
-    name: 'Create Prompt',
-    href: '/cms/prompts/create',
-    initial: 'C',
+    name: 'Trivia Generator',
+    href: '/cms/trivia-generator',
+    initial: 'T',
+  },
+  {
+    id: 2,
+    name: 'Stats Generator',
+    href: '/cms/stats-generator',
+    initial: 'S',
+  },
+  {
+    id: 3,
+    name: 'Stories Generator',
+    href: '/cms/stories-generator',
+    initial: 'S',
+  },
+  {
+    id: 4,
+    name: 'HUGs Generator',
+    href: '/cms/hugs-generator',
+    initial: 'H',
+  },
+  {
+    id: 5,
+    name: 'Motivational Generator',
+    href: '/cms/motivational-generator',
+    initial: 'M',
+  },
+  {
+    id: 6,
+    name: 'Variables',
+    href: '/cms/prompt-variables',
+    initial: 'V',
   },
 ];
 
