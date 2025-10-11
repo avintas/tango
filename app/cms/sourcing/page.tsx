@@ -1,182 +1,50 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import RecentContentFeed from '@/components/recent-content-feed';
-
-interface ContentTag {
-  id: number;
-  value: string;
-  label: string;
-  color: string;
-  icon?: string;
-  description?: string;
-  is_active: boolean;
-  display_order: number;
-  usage_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-// Fallback tags in case API fails
-const FALLBACK_TAGS: ContentTag[] = [
-  {
-    id: 1,
-    value: 'trivia_source',
-    label: 'Trivia',
-    color: '#3b82f6',
-    icon: '📝',
-    is_active: true,
-    display_order: 1,
-    usage_count: 0,
-    created_at: '',
-    updated_at: '',
-  },
-  {
-    id: 2,
-    value: 'quote_source',
-    label: 'Quotes',
-    color: '#f59e0b',
-    icon: '💬',
-    is_active: true,
-    display_order: 2,
-    usage_count: 0,
-    created_at: '',
-    updated_at: '',
-  },
-  {
-    id: 3,
-    value: 'story_source',
-    label: 'Stories',
-    color: '#10b981',
-    icon: '📖',
-    is_active: true,
-    display_order: 3,
-    usage_count: 0,
-    created_at: '',
-    updated_at: '',
-  },
-  {
-    id: 4,
-    value: 'news_source',
-    label: 'News',
-    color: '#ef4444',
-    icon: '📰',
-    is_active: true,
-    display_order: 4,
-    usage_count: 0,
-    created_at: '',
-    updated_at: '',
-  },
-  {
-    id: 5,
-    value: 'stats_source',
-    label: 'Stats',
-    color: '#8b5cf6',
-    icon: '📊',
-    is_active: true,
-    display_order: 5,
-    usage_count: 0,
-    created_at: '',
-    updated_at: '',
-  },
-  {
-    id: 6,
-    value: 'lore_source',
-    label: 'Lore',
-    color: '#ec4899',
-    icon: '🏛️',
-    is_active: true,
-    display_order: 6,
-    usage_count: 0,
-    created_at: '',
-    updated_at: '',
-  },
-  {
-    id: 7,
-    value: 'hugs_source',
-    label: 'H.U.G.s',
-    color: '#f97316',
-    icon: '🤗',
-    is_active: true,
-    display_order: 7,
-    usage_count: 0,
-    created_at: '',
-    updated_at: '',
-  },
-  {
-    id: 8,
-    value: 'geo_source',
-    label: 'Geo',
-    color: '#06b6d4',
-    icon: '🌍',
-    is_active: true,
-    display_order: 8,
-    usage_count: 0,
-    created_at: '',
-    updated_at: '',
-  },
-];
+import { processText, ProcessingStep } from '@/lib/text-processing';
 
 export default function SourcingPage() {
   const [content, setContent] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<ContentTag[]>([]);
-  const [tagsLoading, setTagsLoading] = useState(true);
+  const [processedContent, setProcessedContent] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
+  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
   const [feedRefresh, setFeedRefresh] = useState(0);
   const { session } = useAuth();
 
-  const fetchTags = async () => {
-    if (!session?.access_token) {
-      setTagsLoading(false);
+  const handleProcess = async () => {
+    if (!content.trim()) {
+      setSaveStatus('❌ Please enter some content to process.');
       return;
     }
 
+    setIsProcessing(true);
+    setSaveStatus('Processing content...');
+    setProcessingSteps([]);
+
     try {
-      const response = await fetch('/api/content-tags', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      const result = await response.json();
-
-      console.log('Tags API response:', result); // Debug log
-
-      if (result.success) {
-        setAvailableTags(result.data || []);
-        console.log('Tags loaded:', result.data); // Debug log
-      } else {
-        console.error('Tags API error:', result.error);
-        console.log('Using fallback tags');
-        setAvailableTags(FALLBACK_TAGS);
-      }
+      const result = await processText(content);
+      setProcessedContent(result.processedText);
+      setProcessingSteps(result.steps);
+      setSaveStatus(
+        `✅ Processing complete! ${result.steps.length} steps applied in ${result.processingTime}ms`
+      );
     } catch (error) {
-      console.error('Failed to fetch tags:', error);
-      console.log('Using fallback tags due to error');
-      setAvailableTags(FALLBACK_TAGS);
+      setSaveStatus(
+        `❌ Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
-      setTagsLoading(false);
+      setIsProcessing(false);
     }
   };
 
-  useEffect(() => {
-    fetchTags();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
-
-  const toggleTag = (tagValue: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tagValue)
-        ? prev.filter(t => t !== tagValue)
-        : [...prev, tagValue]
-    );
-  };
-
   const handleSave = async () => {
-    if (!content.trim()) {
+    const textToSave = processedContent || content;
+
+    if (!textToSave.trim()) {
       setSaveStatus('❌ Please enter some content to save.');
       return;
     }
@@ -184,18 +52,8 @@ export default function SourcingPage() {
     setIsSaving(true);
     setSaveStatus('Saving to Supabase...');
 
-    // If no tags selected, default to 'story_source' (article/note)
-    const contentType =
-      selectedTags.length > 0 ? selectedTags[0] : 'story_source';
-
-    // Convert selected tag values to display labels for content_tags
-    const tagLabels = selectedTags.map(
-      tagValue =>
-        availableTags.find(t => t.value === tagValue)?.label || tagValue
-    );
-
     try {
-      const response = await fetch('/api/sourced-text', {
+      const response = await fetch('/api/content-source', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,28 +61,21 @@ export default function SourcingPage() {
         },
         body: JSON.stringify({
           original_text: content.trim(),
-          content_type: contentType,
-          content_tags: tagLabels, // Store display labels like ["Geo", "Stats"]
-          word_count: content
+          processed_content: processedContent ? processedContent.trim() : null,
+          word_count: textToSave
             .trim()
             .split(/\s+/)
             .filter(word => word.length > 0).length,
-          char_count: content.length,
+          char_count: textToSave.length,
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setSaveStatus('✅ Content saved successfully to Supabase!');
+        setSaveStatus('✅ Content saved successfully!');
         // Refresh the feed to show the new item
         setFeedRefresh(prev => prev + 1);
-        // Clear content and status after successful save
-        setTimeout(() => {
-          setContent('');
-          setSelectedTags([]);
-          setSaveStatus('');
-        }, 2000);
       } else {
         setSaveStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
       }
@@ -240,78 +91,30 @@ export default function SourcingPage() {
   return (
     <div className="space-y-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">Content Sourcing</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Content Sourcing
+        </h1>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          Paste content to save and process
+        </p>
       </div>
 
+      {/* Content Sourcing Container */}
       <div className="max-w-5xl mx-auto">
-        <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Content Input
-          </h3>
-
-          {/* Content Type Tag Cloud */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Content Tags{' '}
-              {selectedTags.length > 0 && (
-                <span className="text-blue-600">
-                  ({selectedTags.length} selected)
-                </span>
-              )}
-            </label>
-            {tagsLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {availableTags.map(tag => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => toggleTag(tag.value)}
-                    className={`
-                      px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 transform hover:scale-105
-                      ${
-                        selectedTags.includes(tag.value)
-                          ? 'text-white shadow-lg hover:shadow-xl ring-2 ring-blue-400 ring-offset-1'
-                          : 'bg-white text-gray-700 shadow-sm hover:shadow-md border-2 border-gray-200 hover:border-blue-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:border-blue-500'
-                      }
-                    `}
-                    style={{
-                      backgroundColor: selectedTags.includes(tag.value)
-                        ? tag.color
-                        : undefined,
-                    }}
-                  >
-                    {selectedTags.includes(tag.value) && (
-                      <span className="mr-1.5 text-white opacity-80">✓</span>
-                    )}
-                    {tag.icon && <span className="mr-1.5">{tag.icon}</span>}
-                    {tag.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Click tags to select multiple content types. If none selected,
-              defaults to &quot;Stories&quot;.
-            </p>
-          </div>
-
-          {/* Text Area */}
+        <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 shadow-sm p-6">
+          {/* Content Text Area */}
           <div className="mb-6">
             <label
               htmlFor="content"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Paste your content here
+              Original Content
             </label>
             <textarea
               id="content"
               rows={12}
-              className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-              placeholder="Paste any content you want to save to the database..."
+              className="w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm p-4 font-mono"
+              placeholder="Paste content here..."
               value={content}
               onChange={e => setContent(e.target.value)}
             />
@@ -329,42 +132,173 @@ export default function SourcingPage() {
             </div>
           </div>
 
-          {/* Save Button */}
+          {/* Action Buttons */}
           <div className="flex items-center space-x-4">
             <button
               type="button"
-              onClick={handleSave}
-              disabled={isSaving || !content.trim()}
-              className="px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleProcess}
+              disabled={isProcessing || !content.trim()}
+              className="w-24 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSaving ? 'Saving...' : 'Save'}
+              {isProcessing ? 'Processing...' : 'Process'}
             </button>
 
-            {content && (
-              <button
-                type="button"
-                onClick={() => {
-                  setContent('');
-                  setSelectedTags([]);
-                  setSaveStatus('');
-                }}
-                className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
-              >
-                Clear
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setContent('');
+                setProcessedContent('');
+                setSaveStatus('');
+                setProcessingSteps([]);
+              }}
+              disabled={!content && !processedContent}
+              className="w-24 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
+            >
+              Clear
+            </button>
           </div>
-
-          {/* Status Message */}
-          {saveStatus && (
-            <div className="mt-4 p-3 rounded-md bg-blue-50 dark:bg-blue-900/20">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                {saveStatus}
-              </p>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Processing Steps Container */}
+      {processingSteps.length > 0 && (
+        <div className="max-w-5xl mx-auto mt-8">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Processing Steps
+            </h3>
+            <div className="flex items-center space-x-4 overflow-x-auto pb-2">
+              {processingSteps.map((step, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col items-center space-y-2 min-w-0 flex-shrink-0"
+                >
+                  {/* Status Indicator */}
+                  <div className="relative">
+                    {step.completed ? (
+                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    ) : step.processing ? (
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                        <svg
+                          className="w-4 h-4 text-white animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                          {index + 1}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Step Name */}
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">
+                      {step.name}
+                    </p>
+                  </div>
+                  {/* Connector Line */}
+                  {index < processingSteps.length - 1 && (
+                    <div className="absolute top-4 left-8 w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Processed Content Container */}
+      <div className="max-w-5xl mx-auto mt-8">
+        <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Processed Content
+            {processedContent && (
+              <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
+                (Ready to Save)
+              </span>
+            )}
+          </h3>
+
+          <div>
+            <div
+              className={`w-full rounded-md border p-4 text-sm font-mono whitespace-pre-wrap break-words min-h-[200px] ${
+                processedContent
+                  ? 'border-green-300 bg-green-50 dark:bg-gray-800 dark:border-green-700'
+                  : 'border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600'
+              }`}
+            >
+              {processedContent || ''}
+            </div>
+
+            {processedContent && (
+              <div className="mt-2 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                <span>
+                  {
+                    processedContent
+                      .trim()
+                      .split(/\s+/)
+                      .filter(word => word.length > 0).length
+                  }{' '}
+                  words
+                </span>
+                <span>{processedContent.length} characters</span>
+              </div>
+            )}
+
+            {/* Save Button */}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving || !processedContent}
+                className="w-24 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Message */}
+      {saveStatus && (
+        <div className="max-w-5xl mx-auto mt-6">
+          <div className="p-3 rounded-md bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+            <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
+              {saveStatus}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Recent Content Feed */}
       <div className="max-w-5xl mx-auto">

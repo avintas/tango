@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
-import { CreateSourcedText } from '@/lib/supabase';
+import { CreateContentSource } from '@/lib/supabase';
 
 // Helper function to get user from request
 async function getUserFromRequest(request: NextRequest) {
@@ -35,8 +35,8 @@ async function getUserFromRequest(request: NextRequest) {
 }
 
 /**
- * GET /api/sourced-text
- * Get all sourced text entries
+ * GET /api/content-source
+ * Get all content source entries
  */
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const contentType = searchParams.get('contentType');
     const limit = parseInt(searchParams.get('limit') || '50');
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -71,17 +70,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    let query = supabase
-      .from('sourced_text')
+    const { data, error } = await supabase
+      .from('content_source')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
-
-    if (contentType) {
-      query = query.eq('content_type', contentType);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Database error: ${error.message}`);
@@ -104,8 +97,8 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/sourced-text
- * Create new sourced text entry
+ * POST /api/content-source
+ * Create new content source entry
  */
 export async function POST(request: NextRequest) {
   try {
@@ -117,30 +110,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body: CreateSourcedText = await request.json();
-    const {
-      original_text,
-      content_type,
-      content_tags,
-      word_count,
-      char_count,
-    } = body;
+    const body: CreateContentSource = await request.json();
+    const { original_text, processed_content, word_count, char_count } = body;
 
     if (!original_text?.trim()) {
       return NextResponse.json(
         {
           success: false,
           error: 'Original text is required',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!content_type) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Content type is required',
         },
         { status: 400 }
       );
@@ -166,11 +143,10 @@ export async function POST(request: NextRequest) {
     });
 
     const { data, error } = await supabase
-      .from('sourced_text')
+      .from('content_source')
       .insert({
         original_text: original_text.trim(),
-        content_type,
-        content_tags: content_tags || [],
+        processed_content: processed_content?.trim() || null,
         word_count,
         char_count,
         created_by: user.id,
@@ -185,7 +161,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data,
-      message: 'Sourced text created successfully',
+      message: 'Content source created successfully',
     });
   } catch (error) {
     return NextResponse.json(

@@ -8,40 +8,12 @@ import {
   ChatBubbleOvalLeftIcon,
   NewspaperIcon,
 } from '@heroicons/react/24/outline';
-import { SourcedText } from '@/lib/supabase';
+import { ContentSource } from '@/lib/supabase';
 
-const contentTypeIcons = {
-  trivia_source: DocumentTextIcon,
-  story_source: ChatBubbleLeftRightIcon,
-  quote_source: ChatBubbleOvalLeftIcon,
-  news_source: NewspaperIcon,
-  stats_source: DocumentTextIcon,
-  lore_source: ChatBubbleLeftRightIcon,
-  hugs_source: ChatBubbleOvalLeftIcon,
-  geo_source: NewspaperIcon,
-};
-
-const contentTypeColors = {
-  trivia_source: 'bg-blue-500',
-  story_source: 'bg-green-500',
-  quote_source: 'bg-yellow-500',
-  news_source: 'bg-red-500',
-  stats_source: 'bg-purple-500',
-  lore_source: 'bg-pink-500',
-  hugs_source: 'bg-orange-500',
-  geo_source: 'bg-teal-500',
-};
-
-const contentTypeLabels = {
-  trivia_source: 'Trivia',
-  story_source: 'Story',
-  quote_source: 'Quote',
-  news_source: 'News',
-  stats_source: 'Stats',
-  lore_source: 'Lore',
-  hugs_source: 'H.U.G.s',
-  geo_source: 'Geo',
-};
+// Simple content display - no content types needed
+const contentIcon = DocumentTextIcon;
+const contentColor = 'bg-indigo-500';
+const contentLabel = 'Hockey Content';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -77,7 +49,7 @@ interface RecentContentFeedProps {
 export default function RecentContentFeed({
   refreshTrigger,
 }: RecentContentFeedProps) {
-  const [items, setItems] = useState<SourcedText[]>([]);
+  const [items, setItems] = useState<ContentSource[]>([]);
   const [loading, setLoading] = useState(true);
   const { session } = useAuth();
 
@@ -88,7 +60,7 @@ export default function RecentContentFeed({
     }
 
     try {
-      const response = await fetch('/api/sourced-text?limit=10', {
+      const response = await fetch('/api/content-source?limit=10', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -144,60 +116,28 @@ export default function RecentContentFeed({
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
         Recent Content
       </h3>
-      <div className="flow-root">
-        <ul role="list" className="-mb-8">
-          {items.map((item, eventIdx) => {
-            const IconComponent = contentTypeIcons[item.content_type];
-            const iconColor = contentTypeColors[item.content_type];
-            const label = contentTypeLabels[item.content_type];
-
-            return (
-              <li key={item.id}>
-                <div className="relative pb-8">
-                  {eventIdx !== items.length - 1 ? (
-                    <span
-                      aria-hidden="true"
-                      className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700"
-                    />
-                  ) : null}
-                  <div className="relative flex space-x-3">
-                    <div>
-                      <span
-                        className={classNames(
-                          iconColor,
-                          'flex size-8 items-center justify-center rounded-full ring-8 ring-white dark:ring-gray-900'
-                        )}
-                      >
-                        <IconComponent
-                          aria-hidden="true"
-                          className="size-5 text-white"
-                        />
-                      </span>
-                    </div>
-                    <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            [{label}]
-                          </span>{' '}
-                          {truncateText(item.original_text)}
-                        </p>
-                        <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                          {item.word_count} words • {item.char_count} characters
-                        </div>
-                      </div>
-                      <div className="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
-                        <time dateTime={item.created_at}>
-                          {formatTimeAgo(item.created_at)}
-                        </time>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+      <div className="space-y-2">
+        {items.map(item => (
+          <div
+            key={item.id}
+            className="flex items-center justify-between gap-4 p-3 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                {truncateText(item.original_text, 100)}
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              <span>{item.word_count} words</span>
+              <span>•</span>
+              <span>{item.char_count} chars</span>
+              <span>•</span>
+              <time dateTime={item.created_at}>
+                {formatTimeAgo(item.created_at)}
+              </time>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

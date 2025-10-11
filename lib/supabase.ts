@@ -8,34 +8,22 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Export createClient for use in API routes
 export { createClient };
 
-// Types for sourced_text table
-export type ContentType =
-  | 'trivia_source'
-  | 'story_source'
-  | 'quote_source'
-  | 'news_source'
-  | 'stats_source'
-  | 'lore_source'
-  | 'hugs_source'
-  | 'geo_source';
-
-export interface SourcedText {
+// Types for content_source table
+export interface ContentSource {
   id: number;
   original_text: string;
-  processed_text?: string;
-  content_type: ContentType;
-  content_tags?: string[]; // Display labels like ["Geo", "Stats"]
+  processed_content?: string;
   word_count?: number;
   char_count?: number;
   created_by?: string;
   created_at: string;
+  updated_at: string;
+  published_at?: string;
 }
 
-export interface CreateSourcedText {
+export interface CreateContentSource {
   original_text: string;
-  processed_text?: string;
-  content_type: ContentType;
-  content_tags?: string[]; // Display labels like ["Geo", "Stats"]
+  processed_content?: string;
   word_count?: number;
   char_count?: number;
 }

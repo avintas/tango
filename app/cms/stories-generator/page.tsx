@@ -4,13 +4,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { parsePromptVariables } from '@/lib/parse-prompt-variables';
 import {
-  buildPromptRevised,
-  getDefaultSelectionsRevised,
-  getAnswerFormatOptions,
-  shouldShowComparisonType,
-  shouldShowAnswerFormat,
-  PromptSelections,
-} from '@/lib/prompt-builder-revised';
+  buildStoriesPrompt,
+  StoriesSelections,
+} from '@/lib/prompt-builders-specialized';
 import {
   SparklesIcon,
   DocumentDuplicateIcon,
@@ -21,18 +17,17 @@ import remarkGfm from 'remark-gfm';
 
 export default function PromptGeneratorPage() {
   const [variables, setVariables] = useState<Record<string, string[]>>({});
-  const [selections, setSelections] = useState<PromptSelections>({
-    game_type: '',
-    question_type: '',
-    topic: '',
+  const [selections, setSelections] = useState<StoriesSelections>({
+    story_type: '',
+    narrative_focus: '',
+    story_length: '',
+    perspective: '',
+    emotional_tone: '',
+    time_period: '',
+    story_category: '',
     audience: '',
-    number_of_questions: '10',
-    comparison_type: '',
-    answer_format: '',
-    fact_quality_1: '',
-    fact_quality_2: '',
-    difficulty_level: '',
     output_format: '',
+    storytelling_style: '',
   });
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
@@ -51,7 +46,7 @@ export default function PromptGeneratorPage() {
     }
 
     try {
-      const response = await fetch('/api/prompt-variables', {
+      const response = await fetch('/api/prompt-variables?type=stories', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -64,7 +59,18 @@ export default function PromptGeneratorPage() {
         setVariables(parsedVars);
 
         // Set default selections
-        const defaults = getDefaultSelectionsRevised(parsedVars);
+        const defaults = {
+          story_type: parsedVars.story_type?.[0] || '',
+          narrative_focus: parsedVars.narrative_focus?.[0] || '',
+          story_length: parsedVars.story_length?.[0] || '',
+          perspective: parsedVars.perspective?.[0] || '',
+          emotional_tone: parsedVars.emotional_tone?.[0] || '',
+          time_period: parsedVars.time_period?.[0] || '',
+          story_category: parsedVars.story_category?.[0] || '',
+          audience: parsedVars.audience?.[0] || '',
+          output_format: parsedVars.output_format?.[0] || '',
+          storytelling_style: parsedVars.storytelling_style?.[0] || '',
+        };
         setSelections(defaults);
       }
     } catch (error) {
@@ -81,21 +87,11 @@ export default function PromptGeneratorPage() {
 
   // Update prompt preview when selections change
   useEffect(() => {
-    const prompt = buildPromptRevised(selections);
+    const prompt = buildStoriesPrompt(selections);
     setGeneratedPrompt(prompt);
   }, [selections]);
 
-  // Reset conditional fields when question_type changes
-  useEffect(() => {
-    // Clear answer_format when question_type changes since options are different
-    setSelections(prev => ({
-      ...prev,
-      answer_format: '',
-      comparison_type:
-        prev.question_type === 'Comparison' ? prev.comparison_type : '',
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selections.question_type]);
+  // Stories don't need conditional field logic like trivia does
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -182,7 +178,18 @@ export default function PromptGeneratorPage() {
   };
 
   const handleReset = () => {
-    const defaults = getDefaultSelectionsRevised(variables);
+    const defaults = {
+      story_type: variables.story_type?.[0] || '',
+      narrative_focus: variables.narrative_focus?.[0] || '',
+      story_length: variables.story_length?.[0] || '',
+      perspective: variables.perspective?.[0] || '',
+      emotional_tone: variables.emotional_tone?.[0] || '',
+      time_period: variables.time_period?.[0] || '',
+      story_category: variables.story_category?.[0] || '',
+      audience: variables.audience?.[0] || '',
+      output_format: variables.output_format?.[0] || '',
+      storytelling_style: variables.storytelling_style?.[0] || '',
+    };
     setSelections(defaults);
     setGeneratedContent('');
     setStatus('');
@@ -239,19 +246,19 @@ export default function PromptGeneratorPage() {
           </h3>
 
           <div className="grid grid-cols-3 gap-4 mb-6">
-            {/* Row 1: Core Required Fields */}
+            {/* Row 1: Core Story Fields */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Game Type
+                Story Type
               </label>
               <select
-                value={selections.game_type}
+                value={selections.story_type}
                 onChange={e =>
-                  setSelections({ ...selections, game_type: e.target.value })
+                  setSelections({ ...selections, story_type: e.target.value })
                 }
                 className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
               >
-                {variables.game_type?.map(option => (
+                {variables.story_type?.map(option => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -261,20 +268,19 @@ export default function PromptGeneratorPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Question Type{' '}
-                <span className="text-blue-600 text-xs">(Primary)</span>
+                Narrative Focus
               </label>
               <select
-                value={selections.question_type}
+                value={selections.narrative_focus}
                 onChange={e =>
                   setSelections({
                     ...selections,
-                    question_type: e.target.value,
+                    narrative_focus: e.target.value,
                   })
                 }
                 className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
               >
-                {variables.question_type?.map(option => (
+                {variables.narrative_focus?.map(option => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -284,16 +290,16 @@ export default function PromptGeneratorPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Topic
+                Story Length
               </label>
               <select
-                value={selections.topic}
+                value={selections.story_length}
                 onChange={e =>
-                  setSelections({ ...selections, topic: e.target.value })
+                  setSelections({ ...selections, story_length: e.target.value })
                 }
                 className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
               >
-                {variables.topic?.map(option => (
+                {variables.story_length?.map(option => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -302,6 +308,92 @@ export default function PromptGeneratorPage() {
             </div>
 
             {/* Row 2 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Perspective
+              </label>
+              <select
+                value={selections.perspective}
+                onChange={e =>
+                  setSelections({ ...selections, perspective: e.target.value })
+                }
+                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
+              >
+                {variables.perspective?.map(option => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Emotional Tone
+              </label>
+              <select
+                value={selections.emotional_tone}
+                onChange={e =>
+                  setSelections({
+                    ...selections,
+                    emotional_tone: e.target.value,
+                  })
+                }
+                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
+              >
+                {variables.emotional_tone?.map(option => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Time Period
+              </label>
+              <select
+                value={selections.time_period}
+                onChange={e =>
+                  setSelections({
+                    ...selections,
+                    time_period: e.target.value,
+                  })
+                }
+                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
+              >
+                {variables.time_period?.map(option => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Row 3 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Story Category
+              </label>
+              <select
+                value={selections.story_category}
+                onChange={e =>
+                  setSelections({
+                    ...selections,
+                    story_category: e.target.value,
+                  })
+                }
+                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
+              >
+                {variables.story_category?.map(option => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Audience
@@ -323,19 +415,19 @@ export default function PromptGeneratorPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Number of Questions
+                Storytelling Style
               </label>
               <select
-                value={selections.number_of_questions}
+                value={selections.storytelling_style}
                 onChange={e =>
                   setSelections({
                     ...selections,
-                    number_of_questions: e.target.value,
+                    storytelling_style: e.target.value,
                   })
                 }
                 className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
               >
-                {variables.number_of_questions?.map(option => (
+                {variables.storytelling_style?.map(option => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -343,7 +435,7 @@ export default function PromptGeneratorPage() {
               </select>
             </div>
 
-            {/* Output Format */}
+            {/* Row 4 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Output Format
@@ -359,135 +451,6 @@ export default function PromptGeneratorPage() {
                 className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
               >
                 {variables.output_format?.map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Row 3: Conditional Fields - Only show if relevant */}
-            {shouldShowComparisonType(selections.question_type) && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Comparison Type{' '}
-                  <span className="text-blue-600 text-xs">(Conditional)</span>
-                </label>
-                <select
-                  value={selections.comparison_type}
-                  onChange={e =>
-                    setSelections({
-                      ...selections,
-                      comparison_type: e.target.value,
-                    })
-                  }
-                  className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-                >
-                  <option value="">-- None --</option>
-                  {variables.comparison_type?.map(option => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {shouldShowAnswerFormat(selections.question_type) && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Answer Format{' '}
-                  <span className="text-blue-600 text-xs">(Conditional)</span>
-                </label>
-                <select
-                  value={selections.answer_format}
-                  onChange={e =>
-                    setSelections({
-                      ...selections,
-                      answer_format: e.target.value,
-                    })
-                  }
-                  className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-                >
-                  <option value="">-- None --</option>
-                  {getAnswerFormatOptions(
-                    selections.question_type,
-                    variables
-                  ).map(option => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Row 4: Optional Quality Fields */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Difficulty Level{' '}
-                <span className="text-gray-400 text-xs">(Optional)</span>
-              </label>
-              <select
-                value={selections.difficulty_level}
-                onChange={e =>
-                  setSelections({
-                    ...selections,
-                    difficulty_level: e.target.value,
-                  })
-                }
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-              >
-                <option value="">-- None --</option>
-                {variables.difficulty_level?.map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Fact Quality 1{' '}
-                <span className="text-gray-400 text-xs">(Optional)</span>
-              </label>
-              <select
-                value={selections.fact_quality_1}
-                onChange={e =>
-                  setSelections({
-                    ...selections,
-                    fact_quality_1: e.target.value,
-                  })
-                }
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-              >
-                <option value="">-- None --</option>
-                {variables.fact_quality_1?.map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Fact Quality 2{' '}
-                <span className="text-gray-400 text-xs">(Optional)</span>
-              </label>
-              <select
-                value={selections.fact_quality_2}
-                onChange={e =>
-                  setSelections({
-                    ...selections,
-                    fact_quality_2: e.target.value,
-                  })
-                }
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-              >
-                <option value="">-- None --</option>
-                {variables.fact_quality_2?.map(option => (
                   <option key={option} value={option}>
                     {option}
                   </option>

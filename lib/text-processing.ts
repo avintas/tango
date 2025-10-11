@@ -31,6 +31,13 @@ const PROCESSING_STEPS: ProcessingStep[] = [
     processing: false,
   },
   {
+    id: 'join-sentences',
+    name: 'Join broken sentences',
+    description: 'Remove line breaks within sentences',
+    completed: false,
+    processing: false,
+  },
+  {
     id: 'trim-spaces',
     name: 'Trim leading/trailing spaces',
     description: 'Clean up edges',
@@ -93,6 +100,10 @@ export function processText(text: string): Promise<ProcessingResult> {
           break;
         case 'line-endings':
           processedText = processedText.replace(/\r\n/g, '\n');
+          break;
+        case 'join-sentences':
+          // Remove ALL line breaks, replace with spaces for continuous text flow
+          processedText = processedText.replace(/\n/g, ' ');
           break;
         case 'trim-spaces':
           processedText = processedText.trim();

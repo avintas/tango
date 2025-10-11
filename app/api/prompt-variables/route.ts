@@ -1,114 +1,128 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-const VARIABLES_FILE_PATH = join(process.cwd(), 'prompt-variables.md');
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Helper function to get user from request
-async function getUserFromRequest(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.split(' ')[1];
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return null;
-  }
-
-  return user;
-}
-
-/**
- * GET /api/prompt-variables
- * Read the prompt-variables.md file
- */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
-    if (!user) {
+    const url = new URL(request.url);
+    const contentType = url.searchParams.get('type') || 'trivia';
+
+    // Map content types to their variable files
+    const variableFiles: Record<string, string> = {
+      trivia: 'trivia-variables.md',
+      stats: 'stats-variables.md',
+      stories: 'stories-variables.md',
+      hugs: 'hugs-variables.md',
+      motivational: 'motivational-variables.md',
+    };
+
+    const fileName = variableFiles[contentType];
+    if (!fileName) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        {
+          success: false,
+          error: `Unknown content type: ${contentType}`,
+        },
+        { status: 400 }
       );
     }
 
-    const content = readFileSync(VARIABLES_FILE_PATH, 'utf-8');
+    const filePath = path.join(process.cwd(), 'prompt-variables', fileName);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Variable file not found: ${fileName}`,
+        },
+        { status: 404 }
+      );
+    }
+
+    // Read the file content
+    const content = fs.readFileSync(filePath, 'utf8');
 
     return NextResponse.json({
       success: true,
       data: {
         content,
-        lastModified: new Date().toISOString(),
+        fileName,
+        contentType,
       },
     });
   } catch (error) {
+    console.error('Error reading prompt variables:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to read file',
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-/**
- * POST /api/prompt-variables
- * Save updated content to prompt-variables.md file
- */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    const { content, contentType } = await request.json();
 
-    const body = await request.json();
-    const { content } = body;
-
-    if (!content || typeof content !== 'string') {
+    if (!content || !contentType) {
       return NextResponse.json(
-        { success: false, error: 'Content is required' },
+        {
+          success: false,
+          error: 'Content and contentType are required',
+        },
         { status: 400 }
       );
     }
 
-    // Write to file
-    writeFileSync(VARIABLES_FILE_PATH, content, 'utf-8');
+    // Map content types to their variable files
+    const variableFiles: Record<string, string> = {
+      trivia: 'trivia-variables.md',
+      stats: 'stats-variables.md',
+      stories: 'stories-variables.md',
+      hugs: 'hugs-variables.md',
+      motivational: 'motivational-variables.md',
+    };
+
+    const fileName = variableFiles[contentType];
+    if (!fileName) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Unknown content type: ${contentType}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const filePath = path.join(process.cwd(), 'prompt-variables', fileName);
+
+    // Ensure the directory exists
+    const dirPath = path.dirname(filePath);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+
+    // Write the file
+    fs.writeFileSync(filePath, content, 'utf8');
 
     return NextResponse.json({
       success: true,
-      message: 'Prompt variables saved successfully',
-      data: {
-        savedAt: new Date().toISOString(),
-      },
+      message: `Variables updated for ${contentType}`,
+      fileName,
     });
   } catch (error) {
+    console.error('Error updating prompt variables:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to save file',
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

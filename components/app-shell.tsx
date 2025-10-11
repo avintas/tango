@@ -8,6 +8,9 @@ import {
   ArrowRightOnRectangleIcon,
   TagIcon,
   DocumentTextIcon,
+  ComputerDesktopIcon,
+  NewspaperIcon,
+  BeakerIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -18,17 +21,17 @@ const navigation = [
   {
     name: 'Dashboard',
     href: '/cms',
-    icon: ArchiveBoxIcon,
+    icon: ComputerDesktopIcon,
   },
   {
     name: 'Sourcing',
     href: '/cms/sourcing',
-    icon: ArchiveBoxIcon,
+    icon: NewspaperIcon,
   },
   {
     name: 'Processing',
     href: '/cms/processing',
-    icon: ArchiveBoxIcon,
+    icon: BeakerIcon,
   },
   {
     name: 'Tags',
@@ -78,6 +81,27 @@ const promptActions = [
   },
 ];
 
+const triviaSetsActions = [
+  {
+    id: 1,
+    name: 'All TriviaSets',
+    href: '/trivia-sets',
+    initial: 'A',
+  },
+  {
+    id: 2,
+    name: 'Categories',
+    href: '/trivia-sets/categories',
+    initial: 'C',
+  },
+  {
+    id: 3,
+    name: 'Recent',
+    href: '/trivia-sets/recent',
+    initial: 'R',
+  },
+];
+
 const quickActions = [
   {
     id: 1,
@@ -109,12 +133,12 @@ export default function AppShell({
       {/* Sidebar */}
       <div className="flex w-72 flex-col bg-gray-900">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto px-6 py-4">
-          <div className="flex h-16 shrink-0 items-center">
+          <div className="flex h-14 shrink-0 items-center">
             <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">T</span>
+              <div className="h-7 w-7 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xs">T</span>
               </div>
-              <span className="text-xl font-bold text-white">Tango CMS</span>
+              <span className="text-base font-bold text-white">Tango CMS</span>
             </div>
           </div>
           <nav className="flex flex-1 flex-col">
@@ -131,12 +155,12 @@ export default function AppShell({
                             isActive
                               ? 'bg-white/5 text-white'
                               : 'text-gray-400 hover:bg-white/5 hover:text-white',
-                            'group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold'
+                            'group flex gap-x-2 rounded-md p-1.5 text-xs font-medium'
                           )}
                         >
                           <item.icon
                             aria-hidden="true"
-                            className="size-6 shrink-0"
+                            className="size-4 shrink-0"
                           />
                           {item.name}
                         </Link>
@@ -146,17 +170,17 @@ export default function AppShell({
                 </ul>
               </li>
               <li>
-                <div className="text-xs/6 font-semibold text-gray-400">
-                  Quick Actions
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Testing
                 </div>
                 <ul role="list" className="-mx-2 mt-2 space-y-1">
                   {quickActions.map(action => (
                     <li key={action.name}>
                       <Link
                         href={action.href}
-                        className="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+                        className="group flex gap-x-2 rounded-md p-1.5 text-xs font-medium text-gray-400 hover:bg-white/5 hover:text-white"
                       >
-                        <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">
+                        <span className="flex size-4 shrink-0 items-center justify-center rounded border border-gray-700 bg-gray-800 text-[9px] font-medium text-gray-400 group-hover:text-white">
                           {action.initial}
                         </span>
                         <span className="truncate">{action.name}</span>
@@ -166,7 +190,27 @@ export default function AppShell({
                 </ul>
               </li>
               <li>
-                <div className="text-xs/6 font-semibold text-gray-400">
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  TriviaSets
+                </div>
+                <ul role="list" className="-mx-2 mt-2 space-y-1">
+                  {triviaSetsActions.map(action => (
+                    <li key={action.name}>
+                      <Link
+                        href={action.href}
+                        className="group flex gap-x-2 rounded-md p-1.5 text-xs font-medium text-gray-400 hover:bg-white/5 hover:text-white"
+                      >
+                        <span className="flex size-4 shrink-0 items-center justify-center rounded border border-gray-700 bg-gray-800 text-[9px] font-medium text-gray-400 group-hover:text-white">
+                          {action.initial}
+                        </span>
+                        <span className="truncate">{action.name}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+              <li>
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                   Prompts
                 </div>
                 <ul role="list" className="-mx-2 mt-2 space-y-1">
@@ -174,9 +218,9 @@ export default function AppShell({
                     <li key={action.name}>
                       <Link
                         href={action.href}
-                        className="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-white/5 hover:text-white"
+                        className="group flex gap-x-2 rounded-md p-1.5 text-xs font-medium text-gray-400 hover:bg-white/5 hover:text-white"
                       >
-                        <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">
+                        <span className="flex size-4 shrink-0 items-center justify-center rounded border border-gray-700 bg-gray-800 text-[9px] font-medium text-gray-400 group-hover:text-white">
                           {action.initial}
                         </span>
                         <span className="truncate">{action.name}</span>
@@ -188,17 +232,17 @@ export default function AppShell({
 
               {/* User Section */}
               <li className="mt-auto">
-                <div className="flex items-center gap-x-4 px-2 py-3 text-sm/6 font-semibold leading-6 text-gray-400">
-                  <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
+                <div className="flex items-center gap-x-3 px-2 py-2 text-xs font-medium text-gray-400">
+                  <div className="h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center">
+                    <span className="text-white text-[10px] font-medium">
                       {user?.email?.charAt(0).toUpperCase() || 'A'}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="truncate text-white">
+                    <div className="truncate text-white text-xs">
                       {user?.email?.split('@')[0] || 'Admin'}
                     </div>
-                    <div className="truncate text-xs text-gray-400">
+                    <div className="truncate text-[10px] text-gray-400">
                       {user?.email || 'admin@tango.com'}
                     </div>
                   </div>
@@ -207,7 +251,7 @@ export default function AppShell({
                     className="p-1 text-gray-400 hover:text-white"
                     title="Sign out"
                   >
-                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                    <ArrowRightOnRectangleIcon className="h-4 w-4" />
                   </button>
                 </div>
               </li>
@@ -219,12 +263,12 @@ export default function AppShell({
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-4">
-            <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+          <div className="px-6 py-3">
+            <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="px-6 py-8">{children}</div>
+          <div className="px-6 py-6">{children}</div>
         </main>
       </div>
     </div>

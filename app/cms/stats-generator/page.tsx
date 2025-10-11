@@ -51,7 +51,7 @@ export default function PromptGeneratorPage() {
     }
 
     try {
-      const response = await fetch('/api/prompt-variables', {
+      const response = await fetch('/api/prompt-variables?type=stats', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
