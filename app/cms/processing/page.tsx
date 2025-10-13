@@ -9,7 +9,6 @@ import {
   HeartIcon,
   SparklesIcon,
   BookOpenIcon,
-  NewspaperIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline';
 
@@ -23,25 +22,20 @@ interface ProductionCategory {
   icon: string;
 }
 
-interface SourcedText {
-  id: number;
-  original_text: string;
-  content_type: string;
-  word_count: number;
-  char_count: number;
-  created_at: string;
-}
-
 export default function ProcessingPage() {
+  const { session } = useAuth();
   const [productionCategories, setProductionCategories] = useState<
     ProductionCategory[]
   >([]);
   const [selectedCategory, setSelectedCategory] =
     useState<ProductionCategory | null>(null);
-  const [contentItems, setContentItems] = useState<SourcedText[]>([]);
+  const [promptContent, setPromptContent] = useState<string>('');
+  const [promptLoading, setPromptLoading] = useState(false);
+  const [sourceContent, setSourceContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [contentLoading, setContentLoading] = useState(false);
-  const { session } = useAuth();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<string>('');
+  const [generationError, setGenerationError] = useState<string>('');
 
   // Production category icons mapping
   const productionIcons = {
@@ -51,16 +45,6 @@ export default function ProcessingPage() {
     articles: BookOpenIcon,
     lore: SparklesIcon,
     hugs: HeartIcon,
-  };
-
-  // Production category colors
-  const productionColors = {
-    trivia: 'bg-blue-500',
-    quotes: 'bg-purple-500',
-    stats: 'bg-green-500',
-    articles: 'bg-orange-500',
-    lore: 'bg-yellow-500',
-    hugs: 'bg-pink-500',
   };
 
   useEffect(() => {
@@ -128,51 +112,22 @@ export default function ProcessingPage() {
 
   const handleCategoryClick = async (category: ProductionCategory) => {
     setSelectedCategory(category);
-    setContentLoading(true);
+    setPromptLoading(true);
 
+    // Load the prompt for this category
     try {
-      // Fetch source content appropriate for the production type
-      let contentType = '';
-
-      // Map production types to appropriate source content types
-      switch (category.id) {
-        case 'quotes':
-          contentType = 'quote_source';
-          break;
-        case 'trivia':
-          contentType = 'trivia_source';
-          break;
-        case 'articles':
-          contentType = 'story_source';
-          break;
-        case 'stats':
-        case 'lore':
-          contentType = 'news_source';
-          break;
-        case 'hugs':
-          contentType = 'story_source';
-          break;
-        default:
-          contentType = 'trivia_source';
-      }
-
-      const response = await fetch(
-        `/api/sourced-text?contentType=${contentType}&limit=20`,
-        {
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-        }
+      const promptResponse = await fetch(
+        `/prompts/processing/${category.id}.md`
       );
-
-      const result = await response.json();
-      if (result.success) {
-        setContentItems(result.data || []);
+      if (promptResponse.ok) {
+        const promptText = await promptResponse.text();
+        setPromptContent(promptText);
       }
     } catch (error) {
-      console.error('Failed to fetch content for category:', error);
+      console.error('Failed to load prompt:', error);
+      setPromptContent('');
     } finally {
-      setContentLoading(false);
+      setPromptLoading(false);
     }
   };
 
@@ -183,27 +138,142 @@ export default function ProcessingPage() {
     return <IconComponent className="h-6 w-6 text-white" />;
   };
 
-  const formatTimeAgo = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60)
-    );
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
-
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24)
-      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  // Map category IDs to Gemini content types
+  const categoryToGeminiType: { [key: string]: string } = {
+    trivia: 'trivia_questions',
+    quotes: 'quotes',
+    stats: 'statistics',
+    articles: 'stories',
+    lore: 'history',
+    hugs: 'factoids',
   };
 
-  const truncateText = (text: string, maxLength: number = 100): string => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + '...';
+  const handleGenerate = async () => {
+    if (!selectedCategory || !sourceContent) return;
+
+    setIsGenerating(true);
+    setGenerationError('');
+    setGeneratedContent('');
+
+    try {
+      // Map category ID to Gemini content type
+      const geminiContentType =
+        categoryToGeminiType[selectedCategory.id] || selectedCategory.id;
+
+      // Call Gemini API with source content and content type
+      const response = await fetch('/api/gemini/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          content: sourceContent,
+          contentType: geminiContentType,
+          numItems: 5,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Generation failed');
+      }
+
+      // The result.content is an array of generated items
+      // Save each item as a separate record
+      if (!Array.isArray(result.content)) {
+        throw new Error('Expected array of items from Gemini API');
+      }
+
+      let savedCount = 0;
+      const errors: string[] = [];
+
+      // Save each item individually
+      for (let i = 0; i < result.content.length; i++) {
+        const item = result.content[i];
+
+        // Convert item to markdown format
+        const markdownContent = JSON.stringify(item, null, 2);
+
+        // Generate title based on content type and item content
+        let itemTitle = '';
+        if (item.question) {
+          // Trivia question
+          itemTitle = item.question.substring(0, 100);
+        } else if (item.statistic) {
+          // Statistic
+          itemTitle = item.statistic.substring(0, 100);
+        } else if (item.quote) {
+          // Quote
+          itemTitle = `${item.speaker}: ${item.quote.substring(0, 80)}`;
+        } else if (item.title) {
+          // Story or other content with title
+          itemTitle = item.title;
+        } else if (item.fact) {
+          // Factoid
+          itemTitle = item.fact.substring(0, 100);
+        } else {
+          // Fallback
+          itemTitle = `${selectedCategory.name} - Item ${i + 1}`;
+        }
+
+        try {
+          const saveResponse = await fetch('/api/content-processed', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({
+              title: itemTitle,
+              content_type: selectedCategory.id,
+              markdown_content: markdownContent,
+              status: 'draft',
+            }),
+          });
+
+          const saveResult = await saveResponse.json();
+
+          if (saveResult.success) {
+            savedCount++;
+          } else {
+            errors.push(`Item ${i + 1}: ${saveResult.error}`);
+          }
+        } catch (error) {
+          errors.push(
+            `Item ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
+        }
+      }
+
+      // Show combined preview for user
+      const markdownOutput = result.content
+        .map(
+          (item: any, index: number) =>
+            `## Item ${index + 1}\n\n${JSON.stringify(item, null, 2)}`
+        )
+        .join('\n\n---\n\n');
+      setGeneratedContent(markdownOutput);
+
+      // Display success/error message
+      if (errors.length === 0) {
+        alert(
+          `✅ Successfully generated and saved ${savedCount} items!\n\nType: ${selectedCategory.id}\nEach item is now a separate record.`
+        );
+      } else {
+        alert(
+          `⚠️ Saved ${savedCount} of ${result.content.length} items.\n\nErrors:\n${errors.join('\n')}`
+        );
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+      setGenerationError(
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (loading) {
@@ -217,13 +287,13 @@ export default function ProcessingPage() {
   return (
     <div className="space-y-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">Content Processing</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Content Processing</h1>
       </div>
 
       {/* Categories Section */}
       <div className="max-w-5xl mx-auto">
         <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">
             What do you want to produce?
           </h2>
 
@@ -242,10 +312,10 @@ export default function ProcessingPage() {
                       {getCategoryIcon(category.icon)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">
+                      <h3 className="text-xs font-medium text-gray-900 truncate">
                         {category.name}
                       </h3>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[11px] text-gray-500">
                         {category.description}
                       </p>
                     </div>
@@ -260,85 +330,153 @@ export default function ProcessingPage() {
         </div>
       </div>
 
-      {/* Content Items Section - Only show when category is selected */}
-      {selectedCategory && (
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Source Content for {selectedCategory.name}
-              </h2>
-              <button
-                onClick={() => {
-                  setSelectedCategory(null);
-                  setContentItems([]);
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                ← Back to Categories
-              </button>
-            </div>
-
-            {contentLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-              </div>
-            ) : contentItems.length > 0 ? (
-              <div className="space-y-3">
-                {contentItems.map(item => (
-                  <div
-                    key={item.id}
-                    className="bg-white rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <div
-                            className={`${productionColors[selectedCategory.icon as keyof typeof productionColors]} rounded-md p-1.5 flex-shrink-0`}
-                          >
-                            {getCategoryIcon(selectedCategory.icon)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {truncateText(item.original_text, 120)}
-                            </p>
-                            <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                              <span>{item.word_count} words</span>
-                              <span>•</span>
-                              <span>{formatTimeAgo(item.created_at)}</span>
-                              <span>•</span>
-                              <span className="capitalize">
-                                {item.content_type.replace('_source', '')}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2 ml-4">
-                        <button className="bg-blue-600 text-white text-xs py-1.5 px-3 rounded hover:bg-blue-700 transition-colors">
-                          Select
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-gray-600">
-                          <EllipsisVerticalIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                <p>No content found for {selectedCategory.name}</p>
-                <p className="text-sm">
-                  Add some {selectedCategory.name.toLowerCase()} content to get
-                  started
-                </p>
+      {/* Prompt Display Section - Always show when category is selected */}
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 rounded-lg border border-indigo-200 dark:border-gray-700 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+              {selectedCategory
+                ? `AI Prompt for ${selectedCategory.name}`
+                : 'AI Prompt'}
+            </h2>
+            {selectedCategory && (
+              <div className="flex items-center space-x-2">
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                  prompts/processing/{selectedCategory.id}.md
+                </span>
               </div>
             )}
           </div>
+
+          {!selectedCategory ? (
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center text-gray-500">
+              <p className="text-sm">
+                Select a category above to load its prompt
+              </p>
+            </div>
+          ) : promptLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : promptContent ? (
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 max-h-[120px] overflow-y-auto">
+              <pre className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono leading-relaxed">
+                {promptContent}
+              </pre>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center text-gray-500">
+              <p className="text-sm">No prompt available for this category</p>
+            </div>
+          )}
+
+          {selectedCategory && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                This prompt will be used to process the source content below
+                with AI
+              </p>
+              <button className="text-[11px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium">
+                Edit Prompt →
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* Source Content Input Section - Always show */}
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+                {selectedCategory
+                  ? `Source Content for ${selectedCategory.name}`
+                  : 'Source Content'}
+              </h2>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Paste processed content from the sourcing page
+              </p>
+            </div>
+            {sourceContent && (
+              <button
+                onClick={() => setSourceContent('')}
+                className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <textarea
+            value={sourceContent}
+            onChange={e => setSourceContent(e.target.value)}
+            placeholder="Paste your processed content here..."
+            className="w-full min-h-[300px] rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm p-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+          />
+
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-[11px] text-gray-600 dark:text-gray-400">
+              {sourceContent ? (
+                <>
+                  <span className="font-medium">
+                    {sourceContent.split(/\s+/).filter(Boolean).length}
+                  </span>{' '}
+                  words
+                  <span className="mx-2">•</span>
+                  <span className="font-medium">
+                    {sourceContent.length}
+                  </span>{' '}
+                  characters
+                </>
+              ) : (
+                <span>No content added yet</span>
+              )}
+            </div>
+            <button
+              onClick={handleGenerate}
+              disabled={!selectedCategory || !sourceContent || isGenerating}
+              className="bg-indigo-600 text-white text-xs font-semibold py-2 px-4 rounded-lg hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isGenerating ? 'Generating...' : 'Generate with AI'}
+            </button>
+          </div>
+
+          {/* Error Display */}
+          {generationError && (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-800 dark:text-red-200">
+                <strong>Error:</strong> {generationError}
+              </p>
+            </div>
+          )}
+
+          {/* Generated Content Display */}
+          {generatedContent && (
+            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                  ✅ Content Generated & Saved as Draft
+                </p>
+                <button
+                  onClick={() => setGeneratedContent('')}
+                  className="text-xs text-green-600 hover:text-green-700 dark:text-green-400"
+                >
+                  Dismiss
+                </button>
+              </div>
+              <details className="mt-2">
+                <summary className="text-xs text-green-700 dark:text-green-300 cursor-pointer hover:underline">
+                  Preview markdown (click to expand)
+                </summary>
+                <pre className="mt-2 text-xs text-green-800 dark:text-green-200 bg-white dark:bg-gray-800 p-3 rounded border border-green-200 dark:border-green-700 overflow-x-auto whitespace-pre-wrap">
+                  {generatedContent}
+                </pre>
+              </details>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

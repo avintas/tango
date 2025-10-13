@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import RecentContentFeed from '@/components/recent-content-feed';
 import { processText, ProcessingStep } from '@/lib/text-processing';
 
 export default function SourcingPage() {
@@ -12,7 +11,8 @@ export default function SourcingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
-  const [feedRefresh, setFeedRefresh] = useState(0);
+  const [isOriginalCollapsed, setIsOriginalCollapsed] = useState(false);
+  const [copyStatus, setCopyStatus] = useState('');
   const { session } = useAuth();
 
   const handleProcess = async () => {
@@ -29,6 +29,7 @@ export default function SourcingPage() {
       const result = await processText(content);
       setProcessedContent(result.processedText);
       setProcessingSteps(result.steps);
+      setIsOriginalCollapsed(true); // Collapse original content after processing
       setSaveStatus(
         `✅ Processing complete! ${result.steps.length} steps applied in ${result.processingTime}ms`
       );
@@ -74,8 +75,6 @@ export default function SourcingPage() {
 
       if (result.success) {
         setSaveStatus('✅ Content saved successfully!');
-        // Refresh the feed to show the new item
-        setFeedRefresh(prev => prev + 1);
       } else {
         setSaveStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
       }
@@ -85,6 +84,19 @@ export default function SourcingPage() {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!processedContent) return;
+
+    try {
+      await navigator.clipboard.writeText(processedContent);
+      setCopyStatus('✅ Copied to clipboard!');
+      setTimeout(() => setCopyStatus(''), 2000);
+    } catch (error) {
+      setCopyStatus('❌ Failed to copy');
+      setTimeout(() => setCopyStatus(''), 2000);
     }
   };
 
@@ -104,16 +116,27 @@ export default function SourcingPage() {
         <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 shadow-sm p-6">
           {/* Content Text Area */}
           <div className="mb-6">
-            <label
-              htmlFor="content"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Original Content
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label
+                htmlFor="content"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Original Content
+              </label>
+              {isOriginalCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => setIsOriginalCollapsed(false)}
+                  className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium"
+                >
+                  Expand ↓
+                </button>
+              )}
+            </div>
             <textarea
               id="content"
-              rows={12}
-              className="w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm p-4 font-mono"
+              rows={isOriginalCollapsed ? 3 : 12}
+              className="w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm p-4 font-mono transition-all duration-300"
               placeholder="Paste content here..."
               value={content}
               onChange={e => setContent(e.target.value)}
@@ -150,6 +173,7 @@ export default function SourcingPage() {
                 setProcessedContent('');
                 setSaveStatus('');
                 setProcessingSteps([]);
+                setIsOriginalCollapsed(false);
               }}
               disabled={!content && !processedContent}
               className="w-24 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
@@ -274,8 +298,16 @@ export default function SourcingPage() {
               </div>
             )}
 
-            {/* Save Button */}
-            <div className="mt-4">
+            {/* Action Buttons */}
+            <div className="mt-4 flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={handleCopy}
+                disabled={!processedContent}
+                className="w-24 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
+              >
+                Copy
+              </button>
               <button
                 type="button"
                 onClick={handleSave}
@@ -284,6 +316,11 @@ export default function SourcingPage() {
               >
                 {isSaving ? 'Saving...' : 'Save'}
               </button>
+              {copyStatus && (
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                  {copyStatus}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -299,11 +336,6 @@ export default function SourcingPage() {
           </div>
         </div>
       )}
-
-      {/* Recent Content Feed */}
-      <div className="max-w-5xl mx-auto">
-        <RecentContentFeed refreshTrigger={feedRefresh} />
-      </div>
     </div>
   );
 }

@@ -2,11 +2,8 @@
 
 import {
   BellIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
   ArchiveBoxIcon,
   ArrowRightOnRectangleIcon,
-  TagIcon,
   DocumentTextIcon,
   ComputerDesktopIcon,
   NewspaperIcon,
@@ -29,25 +26,28 @@ const navigation = [
     icon: NewspaperIcon,
   },
   {
+    name: 'Content',
+    href: '/cms/content',
+    icon: DocumentTextIcon,
+  },
+  {
     name: 'Processing',
     href: '/cms/processing',
     icon: BeakerIcon,
   },
   {
-    name: 'Tags',
-    href: '/cms/tags',
-    icon: TagIcon,
+    name: 'Review & Publish',
+    href: '/cms/review',
+    icon: ArchiveBoxIcon,
   },
-  { name: 'Reports', href: '/cms/reports', icon: ChartBarIcon },
-  { name: 'Settings', href: '/cms/settings', icon: Cog6ToothIcon },
 ];
 
 const promptActions = [
   {
     id: 1,
-    name: 'Trivia Generator',
-    href: '/cms/trivia-generator',
-    initial: 'T',
+    name: 'Prompt Constructor',
+    href: '/cms/prompt-constructor',
+    initial: 'P',
   },
   {
     id: 2,
@@ -102,16 +102,6 @@ const triviaSetsActions = [
   },
 ];
 
-const quickActions = [
-  {
-    id: 1,
-    name: 'Sourcing',
-    href: '/cms/sourcing',
-    initial: 'S',
-  },
-  { id: 2, name: 'Home Page', href: '/', initial: 'H' },
-];
-
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
@@ -135,8 +125,10 @@ export default function AppShell({
         <div className="flex grow flex-col gap-y-5 overflow-y-auto px-6 py-4">
           <div className="flex h-14 shrink-0 items-center">
             <div className="flex items-center space-x-2">
-              <div className="h-7 w-7 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xs">T</span>
+              <div className="relative h-7 w-7 bg-indigo-600 rounded-lg flex items-center justify-center overflow-hidden">
+                <span className="text-white font-bold text-xs select-none">
+                  T
+                </span>
               </div>
               <span className="text-base font-bold text-white">Tango CMS</span>
             </div>
@@ -167,26 +159,6 @@ export default function AppShell({
                       </li>
                     );
                   })}
-                </ul>
-              </li>
-              <li>
-                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                  Testing
-                </div>
-                <ul role="list" className="-mx-2 mt-2 space-y-1">
-                  {quickActions.map(action => (
-                    <li key={action.name}>
-                      <Link
-                        href={action.href}
-                        className="group flex gap-x-2 rounded-md p-1.5 text-xs font-medium text-gray-400 hover:bg-white/5 hover:text-white"
-                      >
-                        <span className="flex size-4 shrink-0 items-center justify-center rounded border border-gray-700 bg-gray-800 text-[9px] font-medium text-gray-400 group-hover:text-white">
-                          {action.initial}
-                        </span>
-                        <span className="truncate">{action.name}</span>
-                      </Link>
-                    </li>
-                  ))}
                 </ul>
               </li>
               <li>

@@ -19,7 +19,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-export default function PromptGeneratorPage() {
+export default function PromptConstructorPage() {
   const [variables, setVariables] = useState<Record<string, string[]>>({});
   const [selections, setSelections] = useState<PromptSelections>({
     game_type: '',
@@ -31,13 +31,14 @@ export default function PromptGeneratorPage() {
     answer_format: '',
     fact_quality_1: '',
     fact_quality_2: '',
-    difficulty_level: '',
     output_format: '',
   });
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setSaving] = useState(false);
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
+  const [promptName, setPromptName] = useState('');
   const [loading, setLoading] = useState(true);
   const [showRawMarkdown, setShowRawMarkdown] = useState(false);
   const [status, setStatus] = useState('');
@@ -83,6 +84,41 @@ export default function PromptGeneratorPage() {
   useEffect(() => {
     const prompt = buildPromptRevised(selections);
     setGeneratedPrompt(prompt);
+
+    // Auto-generate prompt name based on selections
+    const nameParts: string[] = [];
+
+    // Add game type (abbreviated)
+    if (selections.game_type) {
+      const gameAbbr = selections.game_type
+        .split(' ')
+        .map(word => word[0].toUpperCase())
+        .join('');
+      nameParts.push(gameAbbr);
+    }
+
+    // Add question type
+    if (selections.question_type) {
+      nameParts.push(selections.question_type.replace(/\s+/g, '-'));
+    }
+
+    // Add topic (abbreviated if long)
+    if (selections.topic) {
+      const topicAbbr =
+        selections.topic.length > 15
+          ? selections.topic
+              .split(' ')
+              .map(w => w[0].toUpperCase())
+              .join('')
+          : selections.topic.replace(/\s+/g, '-');
+      nameParts.push(topicAbbr);
+    }
+
+    // Generate the name
+    const autoName =
+      nameParts.length > 0 ? nameParts.join('-') : 'custom-prompt';
+
+    setPromptName(autoName);
   }, [selections]);
 
   // Reset conditional fields when question_type changes
@@ -181,6 +217,94 @@ export default function PromptGeneratorPage() {
     }
   };
 
+  const handleSavePrompt = async () => {
+    if (!promptName.trim()) {
+      setStatus('❌ Please enter a prompt name');
+      return;
+    }
+
+    if (!generatedPrompt.trim()) {
+      setStatus('❌ No prompt to save. Configure selections first.');
+      return;
+    }
+
+    setIsSavingPrompt(true);
+    setStatus('Saving prompt to file...');
+
+    try {
+      const response = await fetch('/api/prompts/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          promptName: promptName.trim(),
+          promptContent: generatedPrompt,
+          category: 'trivia',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setStatus(`✅ Prompt saved to file: ${result.filePath}`);
+      } else {
+        setStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      setStatus(
+        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setIsSavingPrompt(false);
+    }
+  };
+
+  const handleSaveToDatabase = async () => {
+    if (!promptName.trim()) {
+      setStatus('❌ Please enter a prompt name');
+      return;
+    }
+
+    if (!generatedPrompt.trim()) {
+      setStatus('❌ No prompt to save. Configure selections first.');
+      return;
+    }
+
+    setIsSavingPrompt(true);
+    setStatus('Saving prompt to database...');
+
+    try {
+      const response = await fetch('/api/prompts/save-db', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          name: promptName.trim(),
+          category: 'trivia',
+          prompt_content: generatedPrompt,
+          selections: selections,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setStatus(`✅ Prompt saved to database! ID: ${result.data.id}`);
+      } else {
+        setStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      setStatus(
+        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setIsSavingPrompt(false);
+    }
+  };
+
   const handleReset = () => {
     const defaults = getDefaultSelectionsRevised(variables);
     setSelections(defaults);
@@ -225,9 +349,9 @@ export default function PromptGeneratorPage() {
   return (
     <div className="space-y-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900">Trivia Generator</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Prompt Constructor</h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Generate hockey trivia questions with multiple choice options
+          Build and save custom prompts for AI content generation
         </p>
       </div>
 
@@ -425,30 +549,6 @@ export default function PromptGeneratorPage() {
             {/* Row 4: Optional Quality Fields */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Difficulty Level{' '}
-                <span className="text-gray-400 text-xs">(Optional)</span>
-              </label>
-              <select
-                value={selections.difficulty_level}
-                onChange={e =>
-                  setSelections({
-                    ...selections,
-                    difficulty_level: e.target.value,
-                  })
-                }
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-              >
-                <option value="">-- None --</option>
-                {variables.difficulty_level?.map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Fact Quality 1{' '}
                 <span className="text-gray-400 text-xs">(Optional)</span>
               </label>
@@ -521,27 +621,111 @@ export default function PromptGeneratorPage() {
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Area - Cohesive Button Layout */}
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating || !generatedPrompt}
-            className="flex items-center space-x-2 px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <SparklesIcon className="h-5 w-5" />
-            <span>
-              {isGenerating ? 'Generating...' : 'Generate with Gemini'}
-            </span>
-          </button>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 rounded-lg border border-blue-200 dark:border-gray-700 shadow-sm p-6">
+          {/* Prompt Name Input */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+              Prompt Name
+            </label>
+            <input
+              type="text"
+              value={promptName}
+              onChange={e => setPromptName(e.target.value)}
+              placeholder="Auto-generated based on selections..."
+              className="w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm px-4 py-2.5"
+            />
+          </div>
 
-          <button
-            onClick={handleReset}
-            className="flex items-center space-x-2 px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            <ArrowPathIcon className="h-5 w-5" />
-            <span>Reset to Defaults</span>
-          </button>
+          {/* Action Buttons Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Primary Actions */}
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating || !generatedPrompt}
+              className="flex items-center justify-center space-x-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <SparklesIcon className="h-5 w-5" />
+              <span>
+                {isGenerating ? 'Generating...' : 'Generate with Gemini'}
+              </span>
+            </button>
+
+            <button
+              onClick={handleReset}
+              className="flex items-center justify-center space-x-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-600 dark:hover:bg-gray-700 transition-all"
+            >
+              <ArrowPathIcon className="h-5 w-5" />
+              <span>Reset to Defaults</span>
+            </button>
+
+            {/* Save Actions */}
+            <button
+              onClick={handleSaveToDatabase}
+              disabled={
+                isSavingPrompt || !promptName.trim() || !generatedPrompt
+              }
+              className="flex items-center justify-center space-x-2 rounded-full bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-green-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
+                />
+              </svg>
+              <span>{isSavingPrompt ? 'Saving...' : 'Save to Database'}</span>
+            </button>
+
+            <button
+              onClick={handleSavePrompt}
+              disabled={
+                isSavingPrompt || !promptName.trim() || !generatedPrompt
+              }
+              className="flex items-center justify-center space-x-2 rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <span>{isSavingPrompt ? 'Saving...' : 'Save to File'}</span>
+            </button>
+          </div>
+
+          {/* Helper Text */}
+          <div className="mt-4 flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-400">
+            <svg
+              className="h-4 w-4 mt-0.5 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>
+              Database saves are queryable in the app. File saves are backed up
+              in prompts/trivia/ directory.
+            </span>
+          </div>
         </div>
       </div>
 

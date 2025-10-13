@@ -12,7 +12,6 @@ export interface PromptSelections {
   answer_format: string; // Varies by question_type
   fact_quality_1: string;
   fact_quality_2: string;
-  difficulty_level: string;
   output_format: string;
 }
 
@@ -66,15 +65,6 @@ export function buildPromptRevised(selections: PromptSelections): string {
 
   // Hockey-specific context
   prompt += ` Focus on accurate hockey facts, statistics, history, players, teams, and rules. Ensure all information is factually correct and up-to-date.`;
-
-  // Difficulty level
-  if (selections.difficulty_level) {
-    if (selections.difficulty_level === 'mixed difficulty') {
-      prompt += ` Mix the difficulty levels appropriately for the audience.`;
-    } else {
-      prompt += ` Make all questions ${selections.difficulty_level} difficulty.`;
-    }
-  }
 
   // Content quality requirements
   prompt += ` Make the content engaging, educational, and appropriate for the specified audience.`;
@@ -146,7 +136,6 @@ export function getDefaultSelectionsRevised(
     answer_format: '',
     fact_quality_1: '',
     fact_quality_2: '',
-    difficulty_level: variables.difficulty_level?.[0] || '',
     output_format: variables.output_format?.[0] || '',
   };
 }

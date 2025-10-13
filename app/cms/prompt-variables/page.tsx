@@ -7,6 +7,7 @@ import { DocumentTextIcon } from '@heroicons/react/24/outline';
 export default function PromptVariablesPage() {
   const [content, setContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
+  const [contentType, setContentType] = useState('trivia');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
@@ -30,6 +31,7 @@ export default function PromptVariablesPage() {
       if (result.success) {
         setContent(result.data.content);
         setOriginalContent(result.data.content);
+        setContentType(result.data.contentType || 'trivia');
       } else {
         setStatus(`❌ Failed to load: ${result.error}`);
       }
@@ -63,7 +65,7 @@ export default function PromptVariablesPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, contentType }),
       });
 
       const result = await response.json();

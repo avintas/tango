@@ -27,3 +27,24 @@ export interface CreateContentSource {
   word_count?: number;
   char_count?: number;
 }
+
+// Types for content_processed table
+export interface ContentProcessed {
+  id: number;
+  title: string;
+  content_type: string; // 'trivia', 'stats', 'motivational', 'quotes', 'stories', 'lore'
+  markdown_content: string;
+  status: 'draft' | 'published';
+  published_at?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateContentProcessed {
+  title: string;
+  content_type: string;
+  markdown_content: string;
+  status?: 'draft' | 'published';
+  published_at?: string;
+}

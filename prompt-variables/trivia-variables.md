@@ -1,35 +1,30 @@
-# Prompt Generator Variables: Game Content
+# Prompt Generator Variables: Trivia Content
 
-This file contains all the variable options for the dynamic prompt generator, designed for creating various types of game content.
+This file contains all the variable options for the dynamic prompt generator, designed for creating trivia game content.
 
 ## game_type
 
-- Trivia game
-- Quiz
-- Brain Teaser
+- Trivia
 - Pop Quiz
-- Lightning round
-- Assessment
-- Study Guide
 
 ## question_type
 
-- Fact-based
-- Comparison
-- Clue-based
-- Multiple-Choice
-- True or False
+- Fa
+- Co
+- Cl
+- MC
+- TF
 
 ## topic
 
-- NHL Records
-- Stanley Cup History
-- Famous Goaltenders
-- NHL Mascots
+- Records
+- Stanley Cup
+- Goaltenders
+- Mascots
 - Hockey Nicknames
 - All-Star Games
 - Youth Hockey
-- Hockey Rules and Penalties
+- Rules
 - Rivalries
 - Draft History
 - Arenas and Stadiums
@@ -42,16 +37,15 @@ This file contains all the variable options for the dynamic prompt generator, de
 
 ## audience
 
-- a casual pub night with a mix of avid fans and newcomers
-- a group of dedicated hockey fans
-- a group of people new to the sport
-- a family game night with kids and adults
-- a high school classroom
-- a corporate event
+- casual fans
+- dedicated fans
+- newbies
+- game night
 
 ## number_of_questions
 
 - 1
+- 3
 - 5
 - 10
 - 15
@@ -69,34 +63,15 @@ This file contains all the variable options for the dynamic prompt generator, de
 
 - verifiable
 - historic
-- challenging
-- niche
 - funny
 - surprising
-- easy to understand
 
 ## fact_quality_2 (Optional, for added specificity)
 
 - entertaining
 - educational
 - random
-- thought-provoking
-- anecdotal
 - biographical
-
-## difficulty_level
-
-- easy
-- medium
-- hard
-- mixed difficulty
-
-## output_format
-
-- a Markdown document
-- a JSON object
-- a structured table
-- a plain text list
 
 ## answer_format_fact_based (Conditional: Appears when question_type is "Fact-based")
 
@@ -114,3 +89,48 @@ This file contains all the variable options for the dynamic prompt generator, de
 - a full name
 - a brief explanation
 - a one-word answer
+
+## output_format_structure
+
+**Required Format:**
+
+```markdown
+# [Title]
+
+## [Question Title/Theme]
+
+[Question text goes here]
+
+---
+
+### Options
+
+**A.** [Option 1]  
+**B.** [Option 2]  
+**C.** [Option 3]  
+**D.** [Option 4]
+
+---
+
+### Answer
+
+**[Correct letter].** [Correct answer text]
+
+### Explanation
+
+[Brief explanation with **bold** emphasis on key facts/numbers]
+
+---
+
+**Category:** [Topic category]  
+**Season:** [If applicable]
+```
+
+**Formatting Rules:**
+
+- Use markdown headings (`#`, `##`)
+- Use horizontal rules (`---`) for clear separation
+- Bold key facts and numbers for emphasis
+- Include metadata at the bottom
+- Single, non-obvious fact per question
+- Brief, engaging explanation

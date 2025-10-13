@@ -14,7 +14,6 @@ const CONTENT_TYPE_CONFIG = {
     "question": "What is the question?",
     "correct_answer": "The correct answer",
     "incorrect_answers": ["Wrong answer 1", "Wrong answer 2", "Wrong answer 3"],
-    "difficulty": "easy|medium|hard",
     "category": "Players|Teams|Rules|History|Achievements",
     "explanation": "Optional brief explanation"
   }
@@ -25,8 +24,7 @@ const CONTENT_TYPE_CONFIG = {
   {
     "fact": "Interesting hockey fact",
     "category": "Players|Teams|Rules|History|Achievements",
-    "source": "Optional source information",
-    "difficulty": "easy|medium|hard"
+    "source": "Optional source information"
   }
 ]`,
   },
@@ -98,7 +96,6 @@ export interface TriviaQuestion {
   question: string;
   correct_answer: string;
   incorrect_answers: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
   category: string;
   explanation?: string;
 }
@@ -107,7 +104,6 @@ export interface Factoid {
   fact: string;
   category: string;
   source?: string;
-  difficulty: 'easy' | 'medium' | 'hard';
 }
 
 export interface Quote {
@@ -392,13 +388,11 @@ ${content}
 Provide:
 1. A brief analysis of the content quality and trivia potential
 2. 3-5 specific suggestions for trivia questions that could be generated
-3. Suggested difficulty level (easy/medium/hard mix)
 
 Format as JSON:
 {
   "analysis": "Brief analysis of content",
-  "suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
-  "difficulty": "easy|medium|hard"
+  "suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"]
 }`;
 
   // Check if API key is available
