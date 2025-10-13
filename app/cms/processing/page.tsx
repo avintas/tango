@@ -36,6 +36,8 @@ export default function ProcessingPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string>('');
   const [generationError, setGenerationError] = useState<string>('');
+  const [generatedItems, setGeneratedItems] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Production category icons mapping
   const productionIcons = {
@@ -154,6 +156,7 @@ export default function ProcessingPage() {
     setIsGenerating(true);
     setGenerationError('');
     setGeneratedContent('');
+    setGeneratedItems([]);
 
     try {
       // Map category ID to Gemini content type
@@ -181,45 +184,112 @@ export default function ProcessingPage() {
       }
 
       // The result.content is an array of generated items
-      // Save each item as a separate record
       if (!Array.isArray(result.content)) {
         throw new Error('Expected array of items from Gemini API');
       }
 
+      // Store the generated items (don't save yet - let user choose)
+      setGeneratedItems(result.content);
+
+      // Show combined preview for user
+      const markdownOutput = result.content
+        .map(
+          (item: any, index: number) =>
+            `## Item ${index + 1}\n\n${JSON.stringify(item, null, 2)}`
+        )
+        .join('\n\n---\n\n');
+      setGeneratedContent(markdownOutput);
+    } catch (error) {
+      console.error('Generation error:', error);
+      setGenerationError(
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Helper function to generate title from item
+  const generateItemTitle = (item: any, index: number) => {
+    if (item.question) {
+      return item.question.substring(0, 100);
+    } else if (item.statistic) {
+      return item.statistic.substring(0, 100);
+    } else if (item.quote) {
+      return `${item.speaker}: ${item.quote.substring(0, 80)}`;
+    } else if (item.title) {
+      return item.title;
+    } else if (item.fact) {
+      return item.fact.substring(0, 100);
+    } else {
+      return `${selectedCategory?.name} - Item ${index + 1}`;
+    }
+  };
+
+  // Save as a single bundled set
+  const handleSaveAsBundle = async () => {
+    if (!selectedCategory || generatedItems.length === 0) return;
+
+    setIsSaving(true);
+
+    try {
+      // Create a comprehensive markdown document with all items
+      const bundleTitle = `${selectedCategory.name} Set - ${new Date().toLocaleDateString()}`;
+      const markdownContent = JSON.stringify(generatedItems, null, 2);
+
+      const response = await fetch('/api/content-processed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          title: bundleTitle,
+          content_type: selectedCategory.id,
+          markdown_content: markdownContent,
+          status: 'draft',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(
+          `✅ Saved as single set!\n\nTitle: ${bundleTitle}\nItems: ${generatedItems.length}\nStatus: Draft`
+        );
+        // Clear generated content after successful save
+        setGeneratedItems([]);
+        setGeneratedContent('');
+      } else {
+        throw new Error(result.error || 'Failed to save bundle');
+      }
+    } catch (error) {
+      console.error('Save bundle error:', error);
+      alert(
+        `❌ Failed to save bundle:\n${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save as separate individual items
+  const handleSaveAsSeparate = async () => {
+    if (!selectedCategory || generatedItems.length === 0) return;
+
+    setIsSaving(true);
+
+    try {
       let savedCount = 0;
       const errors: string[] = [];
 
-      // Save each item individually
-      for (let i = 0; i < result.content.length; i++) {
-        const item = result.content[i];
-
-        // Convert item to markdown format
+      for (let i = 0; i < generatedItems.length; i++) {
+        const item = generatedItems[i];
+        const itemTitle = generateItemTitle(item, i + 1);
         const markdownContent = JSON.stringify(item, null, 2);
 
-        // Generate title based on content type and item content
-        let itemTitle = '';
-        if (item.question) {
-          // Trivia question
-          itemTitle = item.question.substring(0, 100);
-        } else if (item.statistic) {
-          // Statistic
-          itemTitle = item.statistic.substring(0, 100);
-        } else if (item.quote) {
-          // Quote
-          itemTitle = `${item.speaker}: ${item.quote.substring(0, 80)}`;
-        } else if (item.title) {
-          // Story or other content with title
-          itemTitle = item.title;
-        } else if (item.fact) {
-          // Factoid
-          itemTitle = item.fact.substring(0, 100);
-        } else {
-          // Fallback
-          itemTitle = `${selectedCategory.name} - Item ${i + 1}`;
-        }
-
         try {
-          const saveResponse = await fetch('/api/content-processed', {
+          const response = await fetch('/api/content-processed', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -233,12 +303,12 @@ export default function ProcessingPage() {
             }),
           });
 
-          const saveResult = await saveResponse.json();
+          const result = await response.json();
 
-          if (saveResult.success) {
+          if (result.success) {
             savedCount++;
           } else {
-            errors.push(`Item ${i + 1}: ${saveResult.error}`);
+            errors.push(`Item ${i + 1}: ${result.error}`);
           }
         } catch (error) {
           errors.push(
@@ -247,32 +317,25 @@ export default function ProcessingPage() {
         }
       }
 
-      // Show combined preview for user
-      const markdownOutput = result.content
-        .map(
-          (item: any, index: number) =>
-            `## Item ${index + 1}\n\n${JSON.stringify(item, null, 2)}`
-        )
-        .join('\n\n---\n\n');
-      setGeneratedContent(markdownOutput);
-
-      // Display success/error message
       if (errors.length === 0) {
         alert(
-          `✅ Successfully generated and saved ${savedCount} items!\n\nType: ${selectedCategory.id}\nEach item is now a separate record.`
+          `✅ Saved ${savedCount} separate items!\n\nType: ${selectedCategory.id}\nStatus: Draft`
         );
+        // Clear generated content after successful save
+        setGeneratedItems([]);
+        setGeneratedContent('');
       } else {
         alert(
-          `⚠️ Saved ${savedCount} of ${result.content.length} items.\n\nErrors:\n${errors.join('\n')}`
+          `⚠️ Saved ${savedCount} of ${generatedItems.length} items.\n\nErrors:\n${errors.join('\n')}`
         );
       }
     } catch (error) {
-      console.error('Generation error:', error);
-      setGenerationError(
-        error instanceof Error ? error.message : 'Unknown error'
+      console.error('Save separate error:', error);
+      alert(
+        `❌ Failed to save items:\n${error instanceof Error ? error.message : 'Unknown error'}`
       );
     } finally {
-      setIsGenerating(false);
+      setIsSaving(false);
     }
   };
 
@@ -451,25 +514,110 @@ export default function ProcessingPage() {
             </div>
           )}
 
-          {/* Generated Content Display */}
+          {/* Generated Content Display with Save Options */}
           {generatedContent && (
-            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-semibold text-green-800 dark:text-green-200">
-                  ✅ Content Generated & Saved as Draft
-                </p>
+            <div className="mt-6 p-6 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-base font-semibold text-gray-900 dark:text-white">
+                    ✅ Generated {generatedItems.length} Items
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    Choose how to save this content
+                  </p>
+                </div>
                 <button
-                  onClick={() => setGeneratedContent('')}
-                  className="text-xs text-green-600 hover:text-green-700 dark:text-green-400"
+                  onClick={() => {
+                    setGeneratedContent('');
+                    setGeneratedItems([]);
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400"
                 >
                   Dismiss
                 </button>
               </div>
-              <details className="mt-2">
-                <summary className="text-xs text-green-700 dark:text-green-300 cursor-pointer hover:underline">
-                  Preview markdown (click to expand)
+
+              {/* Save Options */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <button
+                  onClick={handleSaveAsBundle}
+                  disabled={isSaving}
+                  className="flex flex-col items-start p-4 bg-white dark:bg-gray-800 border-2 border-indigo-300 dark:border-indigo-600 rounded-lg hover:border-indigo-500 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                >
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                      <svg
+                        className="w-5 h-5 text-indigo-600 dark:text-indigo-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                        Save as Single Set
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        1 record • Perfect for &ldquo;Daily Quiz&rdquo;
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-left">
+                    Bundle all {generatedItems.length} items together as one
+                    cohesive set. Great for publishing a complete trivia game.
+                  </p>
+                </button>
+
+                <button
+                  onClick={handleSaveAsSeparate}
+                  disabled={isSaving}
+                  className="flex flex-col items-start p-4 bg-white dark:bg-gray-800 border-2 border-green-300 dark:border-green-600 rounded-lg hover:border-green-500 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                >
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                      <svg
+                        className="w-5 h-5 text-green-600 dark:text-green-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                        Save as {generatedItems.length} Separate Items
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {generatedItems.length} records • Flexible mixing
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-left">
+                    Save each item individually. Perfect for building a content
+                    bank or cherry-picking the best questions.
+                  </p>
+                </button>
+              </div>
+
+              {/* Preview */}
+              <details className="mt-4">
+                <summary className="text-xs text-gray-700 dark:text-gray-300 cursor-pointer hover:underline font-medium">
+                  📄 Preview generated content (click to expand)
                 </summary>
-                <pre className="mt-2 text-xs text-green-800 dark:text-green-200 bg-white dark:bg-gray-800 p-3 rounded border border-green-200 dark:border-green-700 overflow-x-auto whitespace-pre-wrap">
+                <pre className="mt-3 text-xs text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto">
                   {generatedContent}
                 </pre>
               </details>
