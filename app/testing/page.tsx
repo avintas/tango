@@ -39,6 +39,13 @@ export default function TestingHomePage() {
       icon: ChartBarIcon,
       color: 'bg-green-500',
     },
+    {
+      name: 'Profile Cards',
+      href: '/testing/profile-cards',
+      description: 'Test profile-style content cards (Tailwind UI)',
+      icon: DocumentTextIcon,
+      color: 'bg-orange-500',
+    },
   ];
 
   return (
