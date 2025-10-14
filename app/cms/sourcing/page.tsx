@@ -161,7 +161,7 @@ export default function SourcingPage() {
                 htmlFor="content"
                 className="block text-sm text-gray-700 dark:text-gray-300"
               >
-                Original Content
+                Source Content
               </label>
               {isOriginalCollapsed && (
                 <button
