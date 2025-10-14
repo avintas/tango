@@ -120,6 +120,8 @@ export function processText(text: string): Promise<ProcessingResult> {
           processedText = processedText.replace(/[□■◻◼►▸▹◄◂]/g, '');
           // Remove em dashes and en dashes (replace with regular dash)
           processedText = processedText.replace(/[—–]/g, '-');
+          // Remove pipes, broken bars, and vertical separators
+          processedText = processedText.replace(/[¦|]/g, ' ');
           // Remove other common decorative characters
           processedText = processedText.replace(/[†‡§¶]/g, '');
           break;
