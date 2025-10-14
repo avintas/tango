@@ -46,6 +46,13 @@ export default function TestingHomePage() {
       icon: DocumentTextIcon,
       color: 'bg-orange-500',
     },
+    {
+      name: 'Page Headers',
+      href: '/testing/page-headers',
+      description: 'Test page header layouts with actions',
+      icon: SparklesIcon,
+      color: 'bg-teal-500',
+    },
   ];
 
   return (
