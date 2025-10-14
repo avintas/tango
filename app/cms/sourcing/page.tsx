@@ -1,21 +1,77 @@
 'use client';
 
-import { useState } from 'react';
+import { useReducer } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { processText, ProcessingStep } from '@/lib/text-processing';
+import { processText } from '@/lib/text-processing';
+
+// State interface
+interface SourcingState {
+  processedContent: string;
+  isProcessing: boolean;
+  isSaving: boolean;
+  saveStatus: string;
+  copyStatus: string;
+  pasteZoneStatus: string;
+}
+
+// Action types
+type SourcingAction =
+  | { type: 'SET_PROCESSED_CONTENT'; payload: string }
+  | { type: 'SET_PROCESSING'; payload: boolean }
+  | { type: 'SET_SAVING'; payload: boolean }
+  | { type: 'SET_SAVE_STATUS'; payload: string }
+  | { type: 'SET_COPY_STATUS'; payload: string }
+  | { type: 'SET_PASTE_ZONE_STATUS'; payload: string }
+  | { type: 'CLEAR_ALL_STATES' }
+  | { type: 'CLEAR_STATUS_MESSAGES' };
+
+// Initial state
+const initialState: SourcingState = {
+  processedContent: '',
+  isProcessing: false,
+  isSaving: false,
+  saveStatus: '',
+  copyStatus: '',
+  pasteZoneStatus: '',
+};
+
+// Reducer function
+function sourcingReducer(
+  state: SourcingState,
+  action: SourcingAction
+): SourcingState {
+  switch (action.type) {
+    case 'SET_PROCESSED_CONTENT':
+      return { ...state, processedContent: action.payload };
+    case 'SET_PROCESSING':
+      return { ...state, isProcessing: action.payload };
+    case 'SET_SAVING':
+      return { ...state, isSaving: action.payload };
+    case 'SET_SAVE_STATUS':
+      return { ...state, saveStatus: action.payload };
+    case 'SET_COPY_STATUS':
+      return { ...state, copyStatus: action.payload };
+    case 'SET_PASTE_ZONE_STATUS':
+      return { ...state, pasteZoneStatus: action.payload };
+    case 'CLEAR_ALL_STATES':
+      return initialState;
+    case 'CLEAR_STATUS_MESSAGES':
+      return {
+        ...state,
+        saveStatus: '',
+        copyStatus: '',
+        pasteZoneStatus: '',
+      };
+    default:
+      return state;
+  }
+}
 
 export default function SourcingPage() {
-  const [content, setContent] = useState('');
-  const [processedContent, setProcessedContent] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('');
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
-  const [isOriginalCollapsed, setIsOriginalCollapsed] = useState(false);
-  const [copyStatus, setCopyStatus] = useState('');
+  const [state, dispatch] = useReducer(sourcingReducer, initialState);
   const { session } = useAuth();
 
-  // Calculate content statistics
+  // Helper function to get comprehensive content statistics
   const getContentStats = (text: string) => {
     if (!text.trim()) {
       return {
@@ -53,335 +109,468 @@ export default function SourcingPage() {
     };
   };
 
-  const contentStats = getContentStats(content);
+  // Helper function to count words (for backward compatibility)
+  const getWordCount = (text: string) => {
+    return getContentStats(text).words;
+  };
 
-  const handleProcess = async () => {
-    if (!content.trim()) {
-      setSaveStatus('❌ Please enter some content to process.');
-      return;
-    }
+  // Helper function to clear all states
+  const clearAllStates = () => {
+    dispatch({ type: 'CLEAR_ALL_STATES' });
+  };
 
-    setIsProcessing(true);
-    setSaveStatus('Processing content...');
-    setProcessingSteps([]);
+  // Extract clipboard processing logic
+  const processClipboard = async (text: string) => {
+    dispatch({ type: 'SET_PROCESSING', payload: true });
+    dispatch({
+      type: 'SET_PASTE_ZONE_STATUS',
+      payload: '✨ Processing your content...',
+    });
 
     try {
-      const result = await processText(content);
-      setProcessedContent(result.processedText);
-      setProcessingSteps(result.steps);
-      setSaveStatus(
-        `✅ Processing complete! ${result.steps.length} steps applied in ${result.processingTime}ms.`
-      );
+      const result = await processText(text);
+      dispatch({
+        type: 'SET_PROCESSED_CONTENT',
+        payload: result.processedText,
+      });
+      dispatch({
+        type: 'SET_SAVE_STATUS',
+        payload: '✅ Content processed and ready!',
+      });
+      dispatch({ type: 'SET_PASTE_ZONE_STATUS', payload: '✅ Ready to save!' });
     } catch (error) {
-      setSaveStatus(
-        `❌ Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      dispatch({
+        type: 'SET_SAVE_STATUS',
+        payload: `❌ Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+      dispatch({ type: 'SET_PASTE_ZONE_STATUS', payload: '' });
     } finally {
-      setIsProcessing(false);
+      dispatch({ type: 'SET_PROCESSING', payload: false });
+    }
+  };
+
+  const handlePasteZone = async () => {
+    try {
+      // Read from clipboard
+      const clipboardText = await navigator.clipboard.readText();
+
+      if (!clipboardText.trim()) {
+        dispatch({
+          type: 'SET_PASTE_ZONE_STATUS',
+          payload: '❌ Clipboard is empty',
+        });
+        setTimeout(
+          () => dispatch({ type: 'SET_PASTE_ZONE_STATUS', payload: '' }),
+          2000
+        );
+        return;
+      }
+
+      // Clear previous status messages
+      dispatch({ type: 'CLEAR_STATUS_MESSAGES' });
+
+      // Process the clipboard content
+      await processClipboard(clipboardText);
+    } catch (error) {
+      dispatch({
+        type: 'SET_PASTE_ZONE_STATUS',
+        payload: '❌ Could not read clipboard. Try pasting with Ctrl+V',
+      });
+      setTimeout(
+        () => dispatch({ type: 'SET_PASTE_ZONE_STATUS', payload: '' }),
+        3000
+      );
     }
   };
 
   const handleSave = async () => {
-    if (!processedContent?.trim()) {
-      setSaveStatus('❌ Please process content before saving.');
+    if (!state.processedContent?.trim()) {
+      dispatch({
+        type: 'SET_SAVE_STATUS',
+        payload: '❌ Please process content before saving.',
+      });
       return;
     }
 
-    setIsSaving(true);
-    setSaveStatus('Saving to Supabase...');
+    // Clear previous status messages
+    dispatch({ type: 'CLEAR_STATUS_MESSAGES' });
+
+    dispatch({ type: 'SET_SAVING', payload: true });
+    dispatch({ type: 'SET_SAVE_STATUS', payload: 'Saving to Supabase...' });
 
     try {
-      const wordCount = processedContent
-        .trim()
-        .split(/\s+/)
-        .filter(word => word.length > 0).length;
+      const wordCount = getWordCount(state.processedContent);
 
-      const response = await fetch('/api/content-source', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/content-source`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
-          processed_content: processedContent.trim(),
+          processed_content: state.processedContent.trim(),
           word_count: wordCount,
-          char_count: processedContent.length,
+          char_count: state.processedContent.length,
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setSaveStatus('✅ Content saved successfully!');
-        // Clear content after successful save
-        setTimeout(() => {
-          setContent('');
-          setProcessedContent('');
-        }, 2000);
+        dispatch({
+          type: 'SET_SAVE_STATUS',
+          payload: '✅ Content saved successfully!',
+        });
+        dispatch({
+          type: 'SET_PASTE_ZONE_STATUS',
+          payload: '✅ Saved! Click to paste new content.',
+        });
       } else {
-        setSaveStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
+        dispatch({
+          type: 'SET_SAVE_STATUS',
+          payload: `❌ Save failed: ${result.error || 'Unknown error'}`,
+        });
       }
     } catch (error) {
-      setSaveStatus(
-        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      dispatch({
+        type: 'SET_SAVE_STATUS',
+        payload: `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
     } finally {
-      setIsSaving(false);
+      dispatch({ type: 'SET_SAVING', payload: false });
     }
   };
 
   const handleCopy = async () => {
-    if (!processedContent) return;
+    if (!state.processedContent) return;
+
+    // Clear previous status messages
+    dispatch({ type: 'CLEAR_STATUS_MESSAGES' });
 
     try {
-      await navigator.clipboard.writeText(processedContent);
-      setCopyStatus('✅ Copied to clipboard!');
-      setTimeout(() => setCopyStatus(''), 2000);
+      await navigator.clipboard.writeText(state.processedContent);
+      dispatch({ type: 'SET_COPY_STATUS', payload: '✅ Copied to clipboard!' });
+      setTimeout(
+        () => dispatch({ type: 'SET_COPY_STATUS', payload: '' }),
+        2000
+      );
     } catch (error) {
-      setCopyStatus('❌ Failed to copy');
-      setTimeout(() => setCopyStatus(''), 2000);
+      dispatch({ type: 'SET_COPY_STATUS', payload: '❌ Failed to copy' });
+      setTimeout(
+        () => dispatch({ type: 'SET_COPY_STATUS', payload: '' }),
+        2000
+      );
     }
   };
 
   return (
     <div className="space-y-6">
+      {/* Content Sourcing Section */}
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Content Sourcing
-        </h1>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Paste content to save and process
-        </p>
-      </div>
-
-      {/* Content Sourcing Container */}
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 shadow-sm p-6">
-          {/* Content Text Area */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+          {/* Section Header */}
           <div className="mb-6">
-            <div className="mb-2">
-              <label
-                htmlFor="content"
-                className="block text-sm text-gray-700 dark:text-gray-300"
-              >
-                Source Content
-              </label>
-            </div>
-            <textarea
-              id="content"
-              rows={3}
-              className="w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm p-4 font-mono transition-all duration-300"
-              placeholder="Paste content here..."
-              value={content}
-              onChange={e => setContent(e.target.value)}
-            />
-
-            {/* Content Analysis Panel */}
-            <div className="mt-3 pt-3 border-t border-blue-200 dark:border-gray-700">
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                {contentStats.words > 0 ? (
-                  <>
-                    {contentStats.words} words • {contentStats.chars} characters
-                    • {contentStats.sentences} sentences •{' '}
-                    {contentStats.paragraphs} paragraphs • ~
-                    {contentStats.readingTime} min read •{' '}
-                    {contentStats.avgWordsPerSentence} avg words/sentence
-                  </>
-                ) : (
-                  <span className="text-gray-400 dark:text-gray-500">
-                    Paste content to see analysis
-                  </span>
-                )}
-              </div>
-            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Content Sourcing
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Process content from clipboard and manage processed results
+            </p>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-4">
-            <button
-              type="button"
-              onClick={handleProcess}
-              disabled={isProcessing || !content.trim()}
-              className="w-24 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isProcessing ? 'Processing...' : 'Process'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setContent('');
-                setProcessedContent('');
-                setSaveStatus('');
-                setProcessingSteps([]);
-              }}
-              disabled={!content && !processedContent}
-              className="w-24 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
-            >
-              Clear
-            </button>
+          {/* Divider */}
+          <div className="mb-6">
+            <div className="border-t border-gray-200 dark:border-gray-700"></div>
           </div>
-        </div>
-      </div>
 
-      {/* Processing Steps Container */}
-      {processingSteps.length > 0 && (
-        <div className="max-w-5xl mx-auto mt-6">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-              Processing Steps
-            </h3>
-            <div className="flex items-center space-x-3 overflow-x-auto pb-1">
-              {processingSteps.map((step, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col items-center space-y-1 min-w-0 flex-shrink-0"
+          {/* Action Cards */}
+          <div className="divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-200 shadow-sm sm:grid sm:grid-cols-2 sm:divide-y-0 mb-6">
+            {/* Paste Action */}
+            <button
+              type="button"
+              onClick={handlePasteZone}
+              disabled={state.isProcessing}
+              className={`group relative border-gray-200 p-6 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600 sm:odd:not-nth-last-2:border-b sm:even:border-l sm:even:not-last:border-b disabled:cursor-not-allowed transition-all duration-300 ${
+                state.isProcessing
+                  ? 'bg-gradient-to-r from-yellow-50 via-orange-50 to-yellow-50 border-yellow-300 shadow-lg animate-pulse'
+                  : 'bg-white hover:bg-gray-50'
+              }`}
+            >
+              <div>
+                <span
+                  className={`inline-flex rounded-lg p-3 text-yellow-700 transition-all duration-300 ${
+                    state.isProcessing
+                      ? 'bg-gradient-to-r from-yellow-200 to-orange-200 shadow-md animate-pulse'
+                      : 'bg-yellow-50'
+                  }`}
                 >
-                  {/* Status Indicator */}
-                  <div className="relative">
-                    {step.completed ? (
-                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                    ) : step.processing ? (
-                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
-                        <svg
-                          className="w-3 h-3 text-white animate-spin"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                      </div>
-                    ) : (
-                      <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                        <span className="text-gray-600 dark:text-gray-400 text-[10px] font-medium">
-                          {index + 1}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  {/* Step Name */}
-                  <div className="text-center max-w-[80px]">
-                    <p className="text-[10px] font-medium text-gray-700 dark:text-gray-300 leading-tight">
-                      {step.name}
-                    </p>
-                  </div>
-                  {/* Connector Line */}
-                  {index < processingSteps.length - 1 && (
-                    <div className="absolute top-3 left-6 w-3 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Processed Content Container */}
-      <div className="max-w-5xl mx-auto mt-8">
-        <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 shadow-sm p-6">
-          <h3 className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-            Processed Content
-            {processedContent && (
-              <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
-                (Ready to Save)
+                  <svg
+                    className={`h-6 w-6 transition-all duration-300 ${
+                      state.isProcessing ? 'animate-spin' : ''
+                    }`}
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 2l1.5 4.5h4.5l-3.75 3L15.75 14l-3.75-3L8.25 14l1.5-4.5L6 6.5h4.5L12 2z" />
+                    <path d="M19 9l1 1-1 1-1-1 1-1z" />
+                    <path d="M5 9l1 1-1 1-1-1 1-1z" />
+                    <path d="M12 20l1 1-1 1-1-1 1-1z" />
+                  </svg>
+                </span>
+              </div>
+              <div className="mt-8">
+                <h3 className="text-base font-semibold text-gray-900">
+                  <span className="focus:outline-hidden">
+                    <span className="absolute inset-0" aria-hidden="true" />
+                    {state.isProcessing
+                      ? 'Processing...'
+                      : 'Click to Process Content'}
+                  </span>
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  {state.isProcessing
+                    ? 'Analyzing and processing your content...'
+                    : 'Content auto-processed from clipboard'}
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400"
+              >
+                <svg
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6"
+                >
+                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
+                </svg>
               </span>
-            )}
-          </h3>
+            </button>
 
-          <div>
+            {/* Clear Action */}
+            <button
+              type="button"
+              onClick={clearAllStates}
+              disabled={
+                !state.processedContent &&
+                !state.pasteZoneStatus &&
+                !state.isProcessing &&
+                !state.isSaving
+              }
+              className="group relative border-gray-200 bg-white p-6 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600 sm:odd:not-nth-last-2:border-b sm:even:border-l sm:even:not-last:border-b disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div>
+                <span className="inline-flex rounded-lg p-3 bg-red-50 text-red-700">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </span>
+              </div>
+              <div className="mt-8">
+                <h3 className="text-base font-semibold text-gray-900">
+                  <span className="focus:outline-hidden">
+                    <span className="absolute inset-0" aria-hidden="true" />
+                    Clear Memory
+                  </span>
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  Clear all processed content and start fresh
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400"
+              >
+                <svg
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6"
+                >
+                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
+                </svg>
+              </span>
+            </button>
+
+            {/* Copy Action */}
+            <button
+              type="button"
+              onClick={handleCopy}
+              disabled={!state.processedContent}
+              className="group relative border-gray-200 bg-white p-6 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600 sm:odd:not-nth-last-2:border-b sm:even:border-l sm:even:not-last:border-b disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div>
+                <span className="inline-flex rounded-lg p-3 bg-blue-50 text-blue-700">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                </span>
+              </div>
+              <div className="mt-8">
+                <h3 className="text-base font-semibold text-gray-900">
+                  <span className="focus:outline-hidden">
+                    <span className="absolute inset-0" aria-hidden="true" />
+                    Copy Content
+                  </span>
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  Copy processed content to clipboard
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400"
+              >
+                <svg
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6"
+                >
+                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
+                </svg>
+              </span>
+            </button>
+
+            {/* Save Action */}
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={state.isSaving || !state.processedContent}
+              className="group relative border-gray-200 bg-white p-6 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600 sm:odd:not-nth-last-2:border-b sm:even:border-l sm:even:not-last:border-b disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div>
+                <span className="inline-flex rounded-lg p-3 bg-green-50 text-green-700">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                    />
+                  </svg>
+                </span>
+              </div>
+              <div className="mt-8">
+                <h3 className="text-base font-semibold text-gray-900">
+                  <span className="focus:outline-hidden">
+                    <span className="absolute inset-0" aria-hidden="true" />
+                    {state.isSaving ? 'Saving...' : 'Save Content'}
+                  </span>
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  Save processed content to database
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400"
+              >
+                <svg
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6"
+                >
+                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
+                </svg>
+              </span>
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="my-6">
+            <div className="border-t border-gray-200 dark:border-gray-700"></div>
+          </div>
+
+          {/* Status Messages */}
+          {(state.saveStatus || state.copyStatus) && (
+            <div className="mb-6 space-y-3">
+              {state.saveStatus && (
+                <div className="p-3 rounded-md bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+                  <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
+                    {state.saveStatus}
+                  </p>
+                </div>
+              )}
+              {state.copyStatus && (
+                <div className="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                    {state.copyStatus}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Processed Content Display */}
+          <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 p-6">
+            <h3 className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+              Processed Content
+              {state.processedContent && (
+                <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
+                  (Ready to Save)
+                </span>
+              )}
+            </h3>
+
             <div
               className={`w-full rounded-md border p-4 text-sm font-mono whitespace-pre-wrap break-words ${
-                processedContent
+                state.processedContent
                   ? 'border-green-300 bg-green-50 dark:bg-gray-800 dark:border-green-700'
                   : 'border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600 min-h-[100px]'
               }`}
             >
-              {processedContent || (
+              {state.processedContent || (
                 <span className="text-gray-400 dark:text-gray-500 italic">
-                  Processed content will appear here after clicking Process...
+                  Processed content will appear here after pasting...
                 </span>
               )}
             </div>
 
-            {processedContent && (
-              <div className="mt-2 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>
-                  {
-                    processedContent
-                      .trim()
-                      .split(/\s+/)
-                      .filter(word => word.length > 0).length
-                  }{' '}
-                  words
-                </span>
-                <span>{processedContent.length} characters</span>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            {processedContent && (
-              <div className="mt-4 flex items-center space-x-3">
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  disabled={!processedContent}
-                  className="w-24 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Copy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isSaving || !processedContent}
-                  className="w-24 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isSaving ? 'Saving...' : 'Save'}
-                </button>
-                {copyStatus && (
-                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                    {copyStatus}
-                  </span>
-                )}
+            {state.processedContent && (
+              <div className="mt-3 pt-3 border-t border-blue-200 dark:border-gray-700">
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  {(() => {
+                    const stats = getContentStats(state.processedContent);
+                    return (
+                      <>
+                        {stats.words} words • {stats.chars} characters •{' '}
+                        {stats.sentences} sentences • {stats.paragraphs}{' '}
+                        paragraphs • ~{stats.readingTime} min read •{' '}
+                        {stats.avgWordsPerSentence} avg words/sentence
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {/* Status Message */}
-      {saveStatus && (
-        <div className="max-w-5xl mx-auto mt-6">
-          <div className="p-3 rounded-md bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
-            <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-              {saveStatus}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

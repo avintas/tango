@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { CreateContentSource } from '@/lib/supabase';
 
-// Helper function to get user from request
-async function getUserFromRequest(request: NextRequest) {
+// Helper function to get authenticated Supabase client
+async function getAuthenticatedSupabase(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
@@ -13,7 +13,10 @@ async function getUserFromRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // Create a Supabase client with the user's token
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
@@ -31,7 +34,7 @@ async function getUserFromRequest(request: NextRequest) {
     return null;
   }
 
-  return user;
+  return { supabase, user };
 }
 
 /**
@@ -40,35 +43,17 @@ async function getUserFromRequest(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
-    if (!user) {
+    const authResult = await getAuthenticatedSupabase(request);
+    if (!authResult) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
+    const { supabase } = authResult;
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
-    // Create authenticated Supabase client
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
 
     const { data, error } = await supabase
       .from('content_source')
@@ -102,14 +87,15 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
-    if (!user) {
+    const authResult = await getAuthenticatedSupabase(request);
+    if (!authResult) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
 
+    const { supabase, user } = authResult;
     const body: CreateContentSource = await request.json();
     const { processed_content, word_count, char_count } = body;
 
@@ -122,25 +108,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
-    // Create authenticated Supabase client
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
 
     const { data, error } = await supabase
       .from('content_source')
