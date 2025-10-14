@@ -9,6 +9,7 @@ export interface ProcessingStep {
 export interface ProcessingResult {
   originalText: string;
   processedText: string;
+  chunks: string[]; // Array of text chunks
   steps: ProcessingStep[];
   wordCount: number;
   charCount: number;
@@ -90,9 +91,13 @@ export function processText(text: string): Promise<ProcessingResult> {
           .filter(word => word.length > 0).length;
         const charCount = processedText.length;
 
+        // Smart chunking: only chunk large content (>= 600 words)
+        const chunks = smartChunk(processedText);
+
         resolve({
           originalText: text,
           processedText,
+          chunks,
           steps,
           wordCount,
           charCount,
@@ -193,4 +198,85 @@ export function processText(text: string): Promise<ProcessingResult> {
 
 export function getInitialSteps(): ProcessingStep[] {
   return PROCESSING_STEPS.map(step => ({ ...step }));
+}
+
+/**
+ * Smart chunking: Split large content into paragraph-based chunks
+ * Only chunks content >= 600 words
+ * @param text - Processed text to chunk
+ * @param targetWords - Target words per chunk (default: 500)
+ * @param minWordsToChunk - Minimum words to trigger chunking (default: 600)
+ * @returns Array of text chunks
+ */
+export function smartChunk(
+  text: string,
+  targetWords: number = 500,
+  minWordsToChunk: number = 600
+): string[] {
+  const wordCount = text
+    .trim()
+    .split(/\s+/)
+    .filter(word => word.length > 0).length;
+
+  // If content is small, don't chunk it
+  if (wordCount < minWordsToChunk) {
+    return [text];
+  }
+
+  // Split on paragraph boundaries (double newlines or single newlines)
+  // After our processing, text is mostly continuous, so we look for sentence clusters
+  const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
+
+  // If no clear paragraphs, try splitting on periods followed by capital letters
+  // This creates "semantic paragraphs"
+  let workingParagraphs = paragraphs;
+  if (paragraphs.length === 1) {
+    // Split on sentence boundaries: ". [Capital Letter]"
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    // Group sentences into pseudo-paragraphs (~3-5 sentences each)
+    workingParagraphs = [];
+    let tempPara = '';
+    let sentenceCount = 0;
+
+    for (const sentence of sentences) {
+      tempPara += sentence + ' ';
+      sentenceCount++;
+
+      if (sentenceCount >= 4) {
+        workingParagraphs.push(tempPara.trim());
+        tempPara = '';
+        sentenceCount = 0;
+      }
+    }
+
+    if (tempPara.trim().length > 0) {
+      workingParagraphs.push(tempPara.trim());
+    }
+  }
+
+  // Now group paragraphs into chunks of ~targetWords
+  const chunks: string[] = [];
+  let currentChunk: string[] = [];
+  let currentWordCount = 0;
+
+  for (const para of workingParagraphs) {
+    const paraWords = para.split(/\s+/).filter(word => word.length > 0).length;
+
+    // If adding this paragraph exceeds target and we have content, start new chunk
+    if (currentWordCount + paraWords > targetWords && currentChunk.length > 0) {
+      chunks.push(currentChunk.join('\n\n'));
+      currentChunk = [para];
+      currentWordCount = paraWords;
+    } else {
+      currentChunk.push(para);
+      currentWordCount += paraWords;
+    }
+  }
+
+  // Add remaining content
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk.join('\n\n'));
+  }
+
+  return chunks.length > 0 ? chunks : [text];
 }

@@ -7,6 +7,7 @@ import { processText, ProcessingStep } from '@/lib/text-processing';
 export default function SourcingPage() {
   const [content, setContent] = useState('');
   const [processedContent, setProcessedContent] = useState('');
+  const [processedChunks, setProcessedChunks] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
@@ -68,9 +69,15 @@ export default function SourcingPage() {
     try {
       const result = await processText(content);
       setProcessedContent(result.processedText);
+      setProcessedChunks(result.chunks);
       setProcessingSteps(result.steps);
+
+      const chunkInfo =
+        result.chunks.length > 1
+          ? ` Split into ${result.chunks.length} chunks.`
+          : '';
       setSaveStatus(
-        `✅ Processing complete! ${result.steps.length} steps applied in ${result.processingTime}ms`
+        `✅ Processing complete! ${result.steps.length} steps applied in ${result.processingTime}ms.${chunkInfo}`
       );
     } catch (error) {
       setSaveStatus(
@@ -208,6 +215,7 @@ export default function SourcingPage() {
               onClick={() => {
                 setContent('');
                 setProcessedContent('');
+                setProcessedChunks([]);
                 setSaveStatus('');
                 setProcessingSteps([]);
               }}
@@ -303,42 +311,50 @@ export default function SourcingPage() {
             Processed Content
             {processedContent && (
               <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
-                (Ready to Save)
+                {processedChunks.length > 1
+                  ? `(${processedChunks.length} Chunks - Ready to Save)`
+                  : '(Ready to Save)'}
               </span>
             )}
           </h3>
 
-          <div>
-            <div
-              className={`w-full rounded-md border p-4 text-sm font-mono whitespace-pre-wrap break-words ${
-                processedContent
-                  ? 'border-green-300 bg-green-50 dark:bg-gray-800 dark:border-green-700'
-                  : 'border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600 min-h-[100px]'
-              }`}
-            >
-              {processedContent || (
-                <span className="text-gray-400 dark:text-gray-500 italic">
-                  Processed content will appear here after clicking Process...
-                </span>
-              )}
+          {/* Display chunks */}
+          {processedChunks.length > 0 ? (
+            <div className="space-y-4">
+              {processedChunks.map((chunk, index) => {
+                const chunkWords = chunk
+                  .trim()
+                  .split(/\s+/)
+                  .filter(w => w.length > 0).length;
+                return (
+                  <div key={index}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                        {processedChunks.length > 1
+                          ? `Chunk ${index + 1} of ${processedChunks.length}`
+                          : 'Single Chunk'}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {chunkWords} words • {chunk.length} chars
+                      </span>
+                    </div>
+                    <div className="w-full rounded-md border border-green-300 bg-green-50 dark:bg-gray-800 dark:border-green-700 p-4 text-sm font-mono whitespace-pre-wrap break-words">
+                      {chunk}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          ) : (
+            <div className="w-full rounded-md border border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600 p-4 text-sm min-h-[100px] flex items-center justify-center">
+              <span className="text-gray-400 dark:text-gray-500 italic">
+                Processed content will appear here after clicking Process...
+              </span>
+            </div>
+          )}
 
-            {processedContent && (
-              <div className="mt-2 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>
-                  {
-                    processedContent
-                      .trim()
-                      .split(/\s+/)
-                      .filter(word => word.length > 0).length
-                  }{' '}
-                  words
-                </span>
-                <span>{processedContent.length} characters</span>
-              </div>
-            )}
-
-            {/* Action Buttons */}
+          {/* Action Buttons */}
+          {processedContent && (
             <div className="mt-4 flex items-center space-x-3">
               <button
                 type="button"
@@ -346,15 +362,17 @@ export default function SourcingPage() {
                 disabled={!processedContent}
                 className="w-24 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
               >
-                Copy
+                Copy All
               </button>
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={isSaving || !processedContent}
-                className="w-24 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isSaving ? 'Saving...' : 'Save'}
+                {isSaving
+                  ? 'Saving...'
+                  : `Save ${processedChunks.length > 1 ? `All ${processedChunks.length} Chunks` : ''}`}
               </button>
               {copyStatus && (
                 <span className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -362,7 +380,7 @@ export default function SourcingPage() {
                 </span>
               )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
