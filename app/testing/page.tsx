@@ -60,6 +60,13 @@ export default function TestingHomePage() {
       icon: DocumentTextIcon,
       color: 'bg-cyan-500',
     },
+    {
+      name: 'Content Lists',
+      href: '/testing/content-lists',
+      description: 'Test list layouts with status badges and actions',
+      icon: ChartBarIcon,
+      color: 'bg-pink-500',
+    },
   ];
 
   return (
