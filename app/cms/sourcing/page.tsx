@@ -222,23 +222,23 @@ export default function SourcingPage() {
 
       {/* Processing Steps Container */}
       {processingSteps.length > 0 && (
-        <div className="max-w-5xl mx-auto mt-8">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="max-w-5xl mx-auto mt-6">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
               Processing Steps
             </h3>
-            <div className="flex items-center space-x-4 overflow-x-auto pb-2">
+            <div className="flex items-center space-x-3 overflow-x-auto pb-1">
               {processingSteps.map((step, index) => (
                 <div
                   key={index}
-                  className="flex flex-col items-center space-y-2 min-w-0 flex-shrink-0"
+                  className="flex flex-col items-center space-y-1 min-w-0 flex-shrink-0"
                 >
                   {/* Status Indicator */}
                   <div className="relative">
                     {step.completed ? (
-                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                         <svg
-                          className="w-4 h-4 text-white"
+                          className="w-3 h-3 text-white"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -250,9 +250,9 @@ export default function SourcingPage() {
                         </svg>
                       </div>
                     ) : step.processing ? (
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
                         <svg
-                          className="w-4 h-4 text-white animate-spin"
+                          className="w-3 h-3 text-white animate-spin"
                           fill="none"
                           viewBox="0 0 24 24"
                         >
@@ -272,22 +272,22 @@ export default function SourcingPage() {
                         </svg>
                       </div>
                     ) : (
-                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                        <span className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                      <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-gray-600 dark:text-gray-400 text-[10px] font-medium">
                           {index + 1}
                         </span>
                       </div>
                     )}
                   </div>
                   {/* Step Name */}
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">
+                  <div className="text-center max-w-[80px]">
+                    <p className="text-[10px] font-medium text-gray-700 dark:text-gray-300 leading-tight">
                       {step.name}
                     </p>
                   </div>
                   {/* Connector Line */}
                   {index < processingSteps.length - 1 && (
-                    <div className="absolute top-4 left-8 w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+                    <div className="absolute top-3 left-6 w-3 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
                   )}
                 </div>
               ))}
