@@ -15,6 +15,46 @@ export default function SourcingPage() {
   const [copyStatus, setCopyStatus] = useState('');
   const { session } = useAuth();
 
+  // Calculate content statistics
+  const getContentStats = (text: string) => {
+    if (!text.trim()) {
+      return {
+        words: 0,
+        chars: 0,
+        sentences: 0,
+        paragraphs: 0,
+        readingTime: 0,
+        avgWordsPerSentence: 0,
+      };
+    }
+
+    const words = text
+      .trim()
+      .split(/\s+/)
+      .filter(word => word.length > 0).length;
+    const chars = text.length;
+    const sentences = text
+      .split(/[.!?]+/)
+      .filter(s => s.trim().length > 0).length;
+    const paragraphs = text
+      .split(/\n\n+/)
+      .filter(p => p.trim().length > 0).length;
+    const readingTime = Math.ceil(words / 200); // Average reading speed
+    const avgWordsPerSentence =
+      sentences > 0 ? Math.round((words / sentences) * 10) / 10 : 0;
+
+    return {
+      words,
+      chars,
+      sentences,
+      paragraphs,
+      readingTime,
+      avgWordsPerSentence,
+    };
+  };
+
+  const contentStats = getContentStats(content);
+
   const handleProcess = async () => {
     if (!content.trim()) {
       setSaveStatus('❌ Please enter some content to process.');
@@ -119,7 +159,7 @@ export default function SourcingPage() {
             <div className="flex items-center justify-between mb-2">
               <label
                 htmlFor="content"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm text-gray-700 dark:text-gray-300"
               >
                 Original Content
               </label>
@@ -141,17 +181,24 @@ export default function SourcingPage() {
               value={content}
               onChange={e => setContent(e.target.value)}
             />
-            <div className="mt-2 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-              <span>
-                {
-                  content
-                    .trim()
-                    .split(/\s+/)
-                    .filter(word => word.length > 0).length
-                }{' '}
-                words
-              </span>
-              <span>{content.length} characters</span>
+
+            {/* Content Analysis Panel */}
+            <div className="mt-3 pt-3 border-t border-blue-200 dark:border-gray-700">
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                {contentStats.words > 0 ? (
+                  <>
+                    {contentStats.words} words • {contentStats.chars} characters
+                    • {contentStats.sentences} sentences •{' '}
+                    {contentStats.paragraphs} paragraphs • ~
+                    {contentStats.readingTime} min read •{' '}
+                    {contentStats.avgWordsPerSentence} avg words/sentence
+                  </>
+                ) : (
+                  <span className="text-gray-400 dark:text-gray-500">
+                    Paste content to see analysis
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -263,7 +310,7 @@ export default function SourcingPage() {
       {/* Processed Content Container */}
       <div className="max-w-5xl mx-auto mt-8">
         <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h3 className="text-sm text-gray-700 dark:text-gray-300 mb-4">
             Processed Content
             {processedContent && (
               <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
