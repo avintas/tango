@@ -8,6 +8,7 @@ import {
   ComputerDesktopIcon,
   NewspaperIcon,
   BeakerIcon,
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,6 +40,11 @@ const navigation = [
     name: 'Review & Publish',
     href: '/cms/review',
     icon: ArchiveBoxIcon,
+  },
+  {
+    name: 'Testing',
+    href: '/testing',
+    icon: WrenchScrewdriverIcon,
   },
 ];
 
