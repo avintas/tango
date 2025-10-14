@@ -67,6 +67,13 @@ export default function TestingHomePage() {
       icon: ChartBarIcon,
       color: 'bg-pink-500',
     },
+    {
+      name: 'Tabbed Editors',
+      href: '/testing/tabbed-editors',
+      description: 'Test Write/Preview editors with markdown support',
+      icon: BeakerIcon,
+      color: 'bg-amber-500',
+    },
   ];
 
   return (
