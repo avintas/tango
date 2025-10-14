@@ -111,13 +111,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body: CreateContentSource = await request.json();
-    const { original_text, processed_content, word_count, char_count } = body;
+    const { processed_content, word_count, char_count } = body;
 
-    if (!original_text?.trim()) {
+    if (!processed_content?.trim()) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Original text is required',
+          error: 'Processed content is required',
         },
         { status: 400 }
       );
@@ -145,8 +145,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('content_source')
       .insert({
-        original_text: original_text.trim(),
-        processed_content: processed_content?.trim() || null,
+        processed_content: processed_content.trim(),
         word_count,
         char_count,
         created_by: user.id,

@@ -11,8 +11,7 @@ export { createClient };
 // Types for content_source table
 export interface ContentSource {
   id: number;
-  original_text: string;
-  processed_content?: string;
+  processed_content: string;
   word_count?: number;
   char_count?: number;
   created_by?: string;
@@ -22,8 +21,7 @@ export interface ContentSource {
 }
 
 export interface CreateContentSource {
-  original_text: string;
-  processed_content?: string;
+  processed_content: string;
   word_count?: number;
   char_count?: number;
 }

@@ -89,40 +89,58 @@ export default function SourcingPage() {
   };
 
   const handleSave = async () => {
-    const textToSave = processedContent || content;
-
-    if (!textToSave.trim()) {
-      setSaveStatus('❌ Please enter some content to save.');
+    if (!processedContent?.trim()) {
+      setSaveStatus('❌ Please process content before saving.');
       return;
     }
 
     setIsSaving(true);
-    setSaveStatus('Saving to Supabase...');
+    setSaveStatus(
+      `Saving ${processedChunks.length} chunk${processedChunks.length > 1 ? 's' : ''} to Supabase...`
+    );
 
     try {
-      const response = await fetch('/api/content-source', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          original_text: content.trim(),
-          processed_content: processedContent ? processedContent.trim() : null,
-          word_count: textToSave
-            .trim()
-            .split(/\s+/)
-            .filter(word => word.length > 0).length,
-          char_count: textToSave.length,
-        }),
+      // Save each chunk as a separate record
+      const savePromises = processedChunks.map(async chunk => {
+        const chunkWordCount = chunk
+          .trim()
+          .split(/\s+/)
+          .filter(word => word.length > 0).length;
+
+        return fetch('/api/content-source', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            processed_content: chunk.trim(),
+            word_count: chunkWordCount,
+            char_count: chunk.length,
+          }),
+        });
       });
 
-      const result = await response.json();
+      const responses = await Promise.all(savePromises);
+      const results = await Promise.all(responses.map(r => r.json()));
 
-      if (result.success) {
-        setSaveStatus('✅ Content saved successfully!');
+      const allSuccessful = results.every(r => r.success);
+
+      if (allSuccessful) {
+        setSaveStatus(
+          `✅ ${processedChunks.length} chunk${processedChunks.length > 1 ? 's' : ''} saved successfully!`
+        );
+        // Clear content after successful save
+        setTimeout(() => {
+          setContent('');
+          setProcessedContent('');
+          setProcessedChunks([]);
+        }, 2000);
       } else {
-        setSaveStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
+        const failedCount = results.filter(r => !r.success).length;
+        setSaveStatus(
+          `❌ ${failedCount} chunk${failedCount > 1 ? 's' : ''} failed to save.`
+        );
       }
     } catch (error) {
       setSaveStatus(
