@@ -69,7 +69,6 @@ export default function SourcingPage() {
       const result = await processText(content);
       setProcessedContent(result.processedText);
       setProcessingSteps(result.steps);
-      setIsOriginalCollapsed(true); // Collapse original content after processing
       setSaveStatus(
         `✅ Processing complete! ${result.steps.length} steps applied in ${result.processingTime}ms`
       );
@@ -156,26 +155,17 @@ export default function SourcingPage() {
         <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 shadow-sm p-6">
           {/* Content Text Area */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2">
               <label
                 htmlFor="content"
                 className="block text-sm text-gray-700 dark:text-gray-300"
               >
                 Source Content
               </label>
-              {isOriginalCollapsed && (
-                <button
-                  type="button"
-                  onClick={() => setIsOriginalCollapsed(false)}
-                  className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium"
-                >
-                  Expand ↓
-                </button>
-              )}
             </div>
             <textarea
               id="content"
-              rows={isOriginalCollapsed ? 3 : 12}
+              rows={3}
               className="w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm p-4 font-mono transition-all duration-300"
               placeholder="Paste content here..."
               value={content}
@@ -220,7 +210,6 @@ export default function SourcingPage() {
                 setProcessedContent('');
                 setSaveStatus('');
                 setProcessingSteps([]);
-                setIsOriginalCollapsed(false);
               }}
               disabled={!content && !processedContent}
               className="w-24 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
@@ -321,13 +310,17 @@ export default function SourcingPage() {
 
           <div>
             <div
-              className={`w-full rounded-md border p-4 text-sm font-mono whitespace-pre-wrap break-words min-h-[200px] ${
+              className={`w-full rounded-md border p-4 text-sm font-mono whitespace-pre-wrap break-words ${
                 processedContent
                   ? 'border-green-300 bg-green-50 dark:bg-gray-800 dark:border-green-700'
-                  : 'border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600'
+                  : 'border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600 min-h-[100px]'
               }`}
             >
-              {processedContent || ''}
+              {processedContent || (
+                <span className="text-gray-400 dark:text-gray-500 italic">
+                  Processed content will appear here after clicking Process...
+                </span>
+              )}
             </div>
 
             {processedContent && (
