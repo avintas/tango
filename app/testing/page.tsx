@@ -53,6 +53,13 @@ export default function TestingHomePage() {
       icon: SparklesIcon,
       color: 'bg-teal-500',
     },
+    {
+      name: 'Section Headers',
+      href: '/testing/section-headers',
+      description: 'Test section dividers and content organization',
+      icon: DocumentTextIcon,
+      color: 'bg-cyan-500',
+    },
   ];
 
   return (
