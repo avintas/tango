@@ -13,8 +13,6 @@ export default function CMSLayout({ children }: CMSLayoutProps) {
 
   const navigationItems = [
     { name: 'Dashboard', href: '/cms', icon: '📊' },
-    { name: 'Content Editor', href: '/cms/content', icon: '✏️' },
-    { name: 'Content List', href: '/cms/content/list', icon: '📝' },
     { name: 'Media Library', href: '/cms/media', icon: '📁' },
     { name: 'Categories', href: '/cms/categories', icon: '🏷️' },
     { name: 'Users', href: '/cms/users', icon: '👥' },

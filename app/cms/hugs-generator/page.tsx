@@ -31,7 +31,6 @@ export default function PromptGeneratorPage() {
     answer_format: '',
     fact_quality_1: '',
     fact_quality_2: '',
-    difficulty_level: '',
     output_format: '',
   });
   const [generatedPrompt, setGeneratedPrompt] = useState('');
@@ -422,31 +421,6 @@ export default function PromptGeneratorPage() {
                 </select>
               </div>
             )}
-
-            {/* Row 4: Optional Quality Fields */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Difficulty Level{' '}
-                <span className="text-gray-400 text-xs">(Optional)</span>
-              </label>
-              <select
-                value={selections.difficulty_level}
-                onChange={e =>
-                  setSelections({
-                    ...selections,
-                    difficulty_level: e.target.value,
-                  })
-                }
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-              >
-                <option value="">-- None --</option>
-                {variables.difficulty_level?.map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

@@ -264,6 +264,84 @@ export default function SourcingPage() {
     }
   };
 
+  const handleDownloadMarkdown = () => {
+    if (!state.processedContent) return;
+
+    // Clear previous status messages
+    dispatch({ type: 'CLEAR_STATUS_MESSAGES' });
+
+    try {
+      const blob = new Blob([state.processedContent], {
+        type: 'text/markdown',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `processed-content-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      dispatch({
+        type: 'SET_COPY_STATUS',
+        payload: '📄 Downloaded as Markdown!',
+      });
+      setTimeout(
+        () => dispatch({ type: 'SET_COPY_STATUS', payload: '' }),
+        2000
+      );
+    } catch (error) {
+      dispatch({ type: 'SET_COPY_STATUS', payload: '❌ Download failed' });
+      setTimeout(
+        () => dispatch({ type: 'SET_COPY_STATUS', payload: '' }),
+        2000
+      );
+    }
+  };
+
+  const handleDownloadJSON = () => {
+    if (!state.processedContent) return;
+
+    // Clear previous status messages
+    dispatch({ type: 'CLEAR_STATUS_MESSAGES' });
+
+    try {
+      const stats = getContentStats(state.processedContent);
+      const jsonData = {
+        content: state.processedContent,
+        statistics: stats,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          source: 'Content Sourcing Tool',
+          version: '1.0',
+        },
+      };
+
+      const blob = new Blob([JSON.stringify(jsonData, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `processed-content-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      dispatch({ type: 'SET_COPY_STATUS', payload: '📄 Downloaded as JSON!' });
+      setTimeout(
+        () => dispatch({ type: 'SET_COPY_STATUS', payload: '' }),
+        2000
+      );
+    } catch (error) {
+      dispatch({ type: 'SET_COPY_STATUS', payload: '❌ Download failed' });
+      setTimeout(
+        () => dispatch({ type: 'SET_COPY_STATUS', payload: '' }),
+        2000
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Content Sourcing Section */}
@@ -285,7 +363,7 @@ export default function SourcingPage() {
           </div>
 
           {/* Action Cards */}
-          <div className="divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-200 shadow-sm sm:grid sm:grid-cols-2 sm:divide-y-0 mb-6">
+          <div className="divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-200 shadow-sm sm:grid sm:grid-cols-3 sm:divide-y-0 mb-6">
             {/* Paste Action */}
             <button
               type="button"
@@ -484,6 +562,102 @@ export default function SourcingPage() {
                 </h3>
                 <p className="mt-2 text-sm text-gray-500">
                   Save processed content to database
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400"
+              >
+                <svg
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6"
+                >
+                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
+                </svg>
+              </span>
+            </button>
+
+            {/* Download Markdown Action */}
+            <button
+              type="button"
+              onClick={handleDownloadMarkdown}
+              disabled={!state.processedContent}
+              className="group relative border-gray-200 bg-white p-6 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600 sm:odd:not-nth-last-2:border-b sm:even:border-l sm:even:not-last:border-b disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div>
+                <span className="inline-flex rounded-lg p-3 bg-purple-50 text-purple-700">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </span>
+              </div>
+              <div className="mt-8">
+                <h3 className="text-base font-semibold text-gray-900">
+                  <span className="focus:outline-hidden">
+                    <span className="absolute inset-0" aria-hidden="true" />
+                    Download Markdown
+                  </span>
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">Save as .md file</p>
+              </div>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400"
+              >
+                <svg
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="h-6 w-6"
+                >
+                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
+                </svg>
+              </span>
+            </button>
+
+            {/* Download JSON Action */}
+            <button
+              type="button"
+              onClick={handleDownloadJSON}
+              disabled={!state.processedContent}
+              className="group relative border-gray-200 bg-white p-6 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600 sm:odd:not-nth-last-2:border-b sm:even:border-l sm:even:not-last:border-b disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div>
+                <span className="inline-flex rounded-lg p-3 bg-orange-50 text-orange-700">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </span>
+              </div>
+              <div className="mt-8">
+                <h3 className="text-base font-semibold text-gray-900">
+                  <span className="focus:outline-hidden">
+                    <span className="absolute inset-0" aria-hidden="true" />
+                    Download JSON
+                  </span>
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  Save with metadata & stats
                 </p>
               </div>
               <span

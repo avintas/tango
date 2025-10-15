@@ -27,11 +27,6 @@ const navigation = [
     icon: NewspaperIcon,
   },
   {
-    name: 'Content',
-    href: '/cms/content',
-    icon: DocumentTextIcon,
-  },
-  {
     name: 'Processing',
     href: '/cms/processing',
     icon: BeakerIcon,
