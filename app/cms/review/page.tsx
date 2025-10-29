@@ -1,46 +1,38 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth-context';
-import { ContentProcessed } from '@/lib/supabase';
+import { useState, useEffect } from "react";
+import { ContentProcessed } from "@/lib/supabase";
 import {
   DocumentTextIcon,
   EyeIcon,
   CheckCircleIcon,
   ClockIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
+import TriviaReviewQueue from "@/components/trivia-review-queue";
 
 export default function ReviewPage() {
-  const { session } = useAuth();
   const [contentItems, setContentItems] = useState<ContentProcessed[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<ContentProcessed | null>(
-    null
+    null,
   );
-  const [filter, setFilter] = useState<'all' | 'draft' | 'published'>('all');
+  const [filter, setFilter] = useState<"all" | "draft" | "published">("all");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     fetchContent();
-  }, [filter, refreshTrigger, session]);
+  }, [filter, refreshTrigger]);
 
   const fetchContent = async () => {
-    if (!session) return;
-
     try {
       const params = new URLSearchParams();
-      if (filter !== 'all') {
-        params.append('status', filter);
+      if (filter !== "all") {
+        params.append("status", filter);
       }
-      params.append('limit', '50');
+      params.append("limit", "50");
 
       const response = await fetch(
         `/api/content-processed?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
       );
 
       const result = await response.json();
@@ -48,7 +40,7 @@ export default function ReviewPage() {
         setContentItems(result.data || []);
       }
     } catch (error) {
-      console.error('Error fetching content:', error);
+      console.error("Error fetching content:", error);
     } finally {
       setLoading(false);
     }
@@ -56,10 +48,10 @@ export default function ReviewPage() {
 
   const handlePublishToggle = async (
     id: number,
-    currentStatus: 'draft' | 'published'
+    currentStatus: "draft" | "published",
   ) => {
-    const newStatus = currentStatus === 'draft' ? 'published' : 'draft';
-    const action = newStatus === 'published' ? 'Publishing' : 'Unpublishing';
+    const newStatus = currentStatus === "draft" ? "published" : "draft";
+    const action = newStatus === "published" ? "Publishing" : "Unpublishing";
 
     if (
       !confirm(`Are you sure you want to ${action.toLowerCase()} this content?`)
@@ -68,24 +60,23 @@ export default function ReviewPage() {
     }
 
     try {
-      const response = await fetch('/api/content-processed', {
-        method: 'PATCH',
+      const response = await fetch("/api/content-processed", {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           id,
           status: newStatus,
           published_at:
-            newStatus === 'published' ? new Date().toISOString() : null,
+            newStatus === "published" ? new Date().toISOString() : null,
         }),
       });
 
       const result = await response.json();
       if (result.success) {
         alert(`Content ${newStatus}ed successfully!`);
-        setRefreshTrigger(prev => prev + 1);
+        setRefreshTrigger((prev) => prev + 1);
         if (selectedItem?.id === id) {
           setSelectedItem({ ...selectedItem, status: newStatus });
         }
@@ -94,26 +85,26 @@ export default function ReviewPage() {
       }
     } catch (error) {
       alert(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   };
 
   const getContentTypeColor = (type: string) => {
     const colors: { [key: string]: string } = {
-      trivia: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      trivia: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
       quotes:
-        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+        "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
       stats:
-        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       articles:
-        'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-      lore: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      hugs: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+        "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+      lore: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      hugs: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
     };
     return (
       colors[type] ||
-      'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+      "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
     );
   };
 
@@ -137,39 +128,59 @@ export default function ReviewPage() {
         </p>
       </div>
 
+      {/* Trivia Review Section */}
+      <div className="max-w-7xl mx-auto">
+        <TriviaReviewQueue />
+      </div>
+
+      {/* Divider */}
+      <div className="max-w-7xl mx-auto pt-6">
+        <hr className="border-gray-200 dark:border-gray-700" />
+      </div>
+
       {/* Filter Tabs */}
       <div className="max-w-7xl mx-auto">
-        <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              filter === 'all'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            All ({contentItems.length})
-          </button>
-          <button
-            onClick={() => setFilter('draft')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              filter === 'draft'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Drafts
-          </button>
-          <button
-            onClick={() => setFilter('published')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              filter === 'published'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Published
-          </button>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Processed Content
+            </h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Generic content items generated from source.
+            </p>
+          </div>
+          <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                filter === "all"
+                  ? "border-indigo-600 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              All ({contentItems.length})
+            </button>
+            <button
+              onClick={() => setFilter("draft")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                filter === "draft"
+                  ? "border-indigo-600 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Drafts
+            </button>
+            <button
+              onClick={() => setFilter("published")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                filter === "published"
+                  ? "border-indigo-600 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Published
+            </button>
+          </div>
         </div>
       </div>
 
@@ -189,14 +200,14 @@ export default function ReviewPage() {
                 </p>
               </div>
             ) : (
-              contentItems.map(item => (
+              contentItems.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => setSelectedItem(item)}
                   className={`bg-white dark:bg-gray-800 rounded-lg border p-4 cursor-pointer transition-all ${
                     selectedItem?.id === item.id
-                      ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                      ? "border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50"
+                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -204,19 +215,19 @@ export default function ReviewPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getContentTypeColor(
-                            item.content_type
+                            item.content_type,
                           )}`}
                         >
                           {item.content_type}
                         </span>
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            item.status === 'published'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                            item.status === "published"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
                           }`}
                         >
-                          {item.status === 'published' ? (
+                          {item.status === "published" ? (
                             <>
                               <CheckCircleIcon className="h-3 w-3 mr-1" />
                               Published
@@ -233,22 +244,22 @@ export default function ReviewPage() {
                         {item.title}
                       </h3>
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(item.created_at).toLocaleDateString()} at{' '}
+                        {new Date(item.created_at).toLocaleDateString()} at{" "}
                         {new Date(item.created_at).toLocaleTimeString()}
                       </p>
                     </div>
                     <button
-                      onClick={e => {
+                      onClick={(e) => {
                         e.stopPropagation();
                         handlePublishToggle(item.id, item.status);
                       }}
                       className={`ml-3 px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                        item.status === 'published'
-                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                        item.status === "published"
+                          ? "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700"
                       }`}
                     >
-                      {item.status === 'published' ? 'Unpublish' : 'Publish'}
+                      {item.status === "published" ? "Unpublish" : "Publish"}
                     </button>
                   </div>
                 </div>
@@ -275,7 +286,7 @@ export default function ReviewPage() {
                     <div className="flex items-center gap-2 mt-2">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getContentTypeColor(
-                          selectedItem.content_type
+                          selectedItem.content_type,
                         )}`}
                       >
                         {selectedItem.content_type}
@@ -299,18 +310,18 @@ export default function ReviewPage() {
                       onClick={() =>
                         handlePublishToggle(
                           selectedItem.id,
-                          selectedItem.status
+                          selectedItem.status,
                         )
                       }
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                        selectedItem.status === 'published'
-                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                        selectedItem.status === "published"
+                          ? "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700"
                       }`}
                     >
-                      {selectedItem.status === 'published'
-                        ? 'Unpublish'
-                        : 'Publish'}
+                      {selectedItem.status === "published"
+                        ? "Unpublish"
+                        : "Publish"}
                     </button>
                   </div>
                 </div>

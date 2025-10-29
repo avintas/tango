@@ -1,325 +1,444 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth-context';
-import PromptFeed from '@/components/prompt-feed';
+import { useReducer } from "react";
+import ContentTypeSelector, {
+  ContentType,
+} from "@/components/content-type-selector";
+import { useAuth } from "@/lib/auth-context";
+import { Heading } from "@/components/ui/heading";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import {
+  ArrowDownTrayIcon,
+  DocumentDuplicateIcon,
+  TrashIcon,
+  ClipboardDocumentIcon,
+  CircleStackIcon,
+} from "@heroicons/react/24/outline";
 
-interface Category {
-  id: number;
-  name: string;
-  content_types: string[];
+// State interface
+interface PromptCreationState {
+  promptName: string;
+  promptContent: string;
+  contentType: ContentType | null;
+  isSaving: boolean;
+  saveStatus: { type: "success" | "error" | "info"; message: string };
+  copyStatus: { type: "success" | "error" | "info"; message: string };
 }
 
-interface CreatePromptData {
-  name: string;
-  description: string;
-  prompt_text: string;
-  content_type: string;
-  ai_service: string;
-  category_id: number;
+// Action types
+type PromptCreationAction =
+  | { type: "SET_PROMPT_NAME"; payload: string }
+  | { type: "SET_PROMPT_CONTENT"; payload: string }
+  | { type: "SET_CONTENT_TYPE"; payload: ContentType }
+  | { type: "SET_SAVING"; payload: boolean }
+  | {
+      type: "SET_SAVE_STATUS";
+      payload: { type: "success" | "error" | "info"; message: string };
+    }
+  | {
+      type: "SET_COPY_STATUS";
+      payload: { type: "success" | "error" | "info"; message: string };
+    }
+  | { type: "CLEAR_ALL_STATES" }
+  | { type: "CLEAR_STATUS_MESSAGES" };
+
+// Initial state
+const initialState: PromptCreationState = {
+  promptName: "",
+  promptContent: "",
+  contentType: null,
+  isSaving: false,
+  saveStatus: { type: "info", message: "" },
+  copyStatus: { type: "info", message: "" },
+};
+
+// Reducer function
+function promptCreationReducer(
+  state: PromptCreationState,
+  action: PromptCreationAction,
+): PromptCreationState {
+  switch (action.type) {
+    case "SET_PROMPT_NAME":
+      return { ...state, promptName: action.payload };
+    case "SET_PROMPT_CONTENT":
+      return { ...state, promptContent: action.payload };
+    case "SET_SAVING":
+      return { ...state, isSaving: action.payload };
+    case "SET_SAVE_STATUS":
+      return { ...state, saveStatus: action.payload };
+    case "SET_COPY_STATUS":
+      return { ...state, copyStatus: action.payload };
+    case "CLEAR_ALL_STATES":
+      return initialState;
+    case "CLEAR_STATUS_MESSAGES":
+      return {
+        ...state,
+        saveStatus: { type: "info", message: "" },
+        copyStatus: { type: "info", message: "" },
+      };
+    default:
+      return state;
+  }
 }
 
-export default function CreatePromptPage() {
-  const [formData, setFormData] = useState<CreatePromptData>({
-    name: '',
-    description: '',
-    prompt_text: '',
-    content_type: 'article',
-    ai_service: 'gemini',
-    category_id: 0,
-  });
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('');
-  const [feedRefresh, setFeedRefresh] = useState(0);
-  const { session } = useAuth();
+const allowedPromptTypes: ContentType[] = [
+  "multiple-choice",
+  "true-false",
+  "who-am-i",
+  "stats",
+  "motivational",
+  "greetings",
+  "penalty-box-philosopher",
+];
 
-  // Fetch categories on component mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      if (!session?.access_token) return;
+export default function PromptCreationPage() {
+  const [state, dispatch] = useReducer(promptCreationReducer, initialState);
+  const { user } = useAuth();
 
-      try {
-        const response = await fetch('/api/categories', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          setCategories(result.data || []);
-          // Set first category as default if none selected
-          if (result.data?.length > 0 && formData.category_id === 0) {
-            setFormData(prev => ({ ...prev, category_id: result.data[0].id }));
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
-      }
-    };
-
-    fetchCategories();
-  }, [session, formData.category_id]);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'category_id' ? parseInt(value) : value,
-    }));
+  // Helper function to get character count
+  const getCharCount = (text: string) => {
+    return text.length;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Helper function to clear all states
+  const clearAllStates = () => {
+    dispatch({ type: "CLEAR_ALL_STATES" });
+  };
 
-    if (!formData.name.trim() || !formData.prompt_text.trim()) {
-      setSaveStatus('❌ Name and prompt text are required.');
+  const handlePaste = async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (clipboardText.trim()) {
+        dispatch({ type: "SET_PROMPT_CONTENT", payload: clipboardText });
+        dispatch({ type: "CLEAR_STATUS_MESSAGES" });
+        dispatch({
+          type: "SET_COPY_STATUS",
+          payload: { type: "success", message: "Pasted from clipboard!" },
+        });
+        setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+      }
+    } catch (error) {
+      dispatch({
+        type: "SET_COPY_STATUS",
+        payload: {
+          type: "error",
+          message: "Failed to read from clipboard.",
+        },
+      });
+      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!state.promptContent?.trim()) {
+      dispatch({
+        type: "SET_SAVE_STATUS",
+        payload: {
+          type: "error",
+          message: "❌ Please add prompt content before saving.",
+        },
+      });
       return;
     }
 
-    if (formData.category_id === 0) {
-      setSaveStatus('❌ Please select a category.');
+    if (!state.contentType) {
+      dispatch({
+        type: "SET_SAVE_STATUS",
+        payload: {
+          type: "error",
+          message: "❌ Please select a content type before saving.",
+        },
+      });
       return;
     }
 
-    setIsSaving(true);
-    setSaveStatus('Saving prompt template...');
+    // Clear previous status messages
+    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
+
+    dispatch({ type: "SET_SAVING", payload: true });
+    dispatch({
+      type: "SET_SAVE_STATUS",
+      payload: { type: "info", message: "Saving to database..." },
+    });
 
     try {
-      const response = await fetch('/api/prompts', {
-        method: 'POST',
+      const response = await fetch("/api/prompts", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          prompt_name: state.promptName.trim() || null,
+          prompt_content: state.promptContent.trim(),
+          content_type: state.contentType,
+          created_by: user?.id || null,
+        }),
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        setSaveStatus('✅ Prompt template saved successfully!');
-        // Refresh the feed to show the new prompt
-        setFeedRefresh(prev => prev + 1);
-        // Clear form after successful save
-        setTimeout(() => {
-          setFormData({
-            name: '',
-            description: '',
-            prompt_text: '',
-            content_type: 'article',
-            ai_service: 'gemini',
-            category_id: categories[0]?.id || 0,
-          });
-          setSaveStatus('');
-        }, 2000);
-      } else {
-        setSaveStatus(`❌ Save failed: ${result.error || 'Unknown error'}`);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to save prompt");
       }
+
+      dispatch({
+        type: "SET_SAVE_STATUS",
+        payload: {
+          type: "success",
+          message: "✅ Prompt saved successfully!",
+        },
+      });
     } catch (error) {
-      setSaveStatus(
-        `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      dispatch({
+        type: "SET_SAVE_STATUS",
+        payload: {
+          type: "error",
+          message: `❌ Error: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        },
+      });
     } finally {
-      setIsSaving(false);
+      dispatch({ type: "SET_SAVING", payload: false });
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!state.promptContent) return;
+
+    // Clear previous status messages
+    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
+
+    try {
+      await navigator.clipboard.writeText(state.promptContent);
+      dispatch({
+        type: "SET_COPY_STATUS",
+        payload: { type: "success", message: "✅ Copied to clipboard!" },
+      });
+      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+    } catch (error) {
+      dispatch({
+        type: "SET_COPY_STATUS",
+        payload: { type: "error", message: "❌ Failed to copy" },
+      });
+      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+    }
+  };
+
+  const handleDownloadMarkdown = () => {
+    if (!state.promptContent) return;
+
+    // Clear previous status messages
+    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
+
+    try {
+      const blob = new Blob([state.promptContent], {
+        type: "text/markdown",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `prompt-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      dispatch({
+        type: "SET_COPY_STATUS",
+        payload: { type: "success", message: "📄 Downloaded as Markdown!" },
+      });
+      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+    } catch (error) {
+      dispatch({
+        type: "SET_COPY_STATUS",
+        payload: { type: "error", message: "❌ Download failed" },
+      });
+      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+    }
+  };
+
+  const handleDownloadJSON = () => {
+    if (!state.promptContent) return;
+
+    // Clear previous status messages
+    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
+
+    try {
+      const jsonData = {
+        prompt: state.promptContent,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          source: "Prompt Creation Tool",
+          version: "1.0",
+        },
+      };
+
+      const blob = new Blob([JSON.stringify(jsonData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `prompt-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      dispatch({
+        type: "SET_COPY_STATUS",
+        payload: { type: "success", message: "📄 Downloaded as JSON!" },
+      });
+      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+    } catch (error) {
+      dispatch({
+        type: "SET_COPY_STATUS",
+        payload: { type: "error", message: "❌ Download failed" },
+      });
+      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="max-w-4xl mx-auto mt-8">
-        <div className="bg-blue-50 dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Create Prompt Template
-          </h3>
+    <div className="bg-gray-50 min-h-screen p-6 space-y-8">
+      <Heading>Create New Prompt</Heading>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name */}
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Template Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-                placeholder="e.g., Halloween Hockey Traditions"
-                required
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Prompt Editor */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <div className="space-y-4">
+              <Input
+                name="promptName"
+                placeholder="Enter a name for your prompt (optional)"
+                value={state.promptName}
+                onChange={(e) =>
+                  dispatch({
+                    type: "SET_PROMPT_NAME",
+                    payload: e.target.value,
+                  })
+                }
               />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Description
-              </label>
-              <input
-                type="text"
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-                placeholder="Brief description of what this prompt generates"
-              />
-            </div>
-
-            {/* Content Type */}
-            <div>
-              <label
-                htmlFor="content_type"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Content Type
-              </label>
-              <select
-                id="content_type"
-                name="content_type"
-                value={formData.content_type}
-                onChange={handleInputChange}
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-              >
-                <option value="article">Article</option>
-                <option value="trivia_multiple_choice">
-                  Trivia (Multiple Choice)
-                </option>
-                <option value="trivia_true_false">Trivia (True/False)</option>
-                <option value="quote">Quote</option>
-                <option value="story">Story</option>
-                <option value="hugs">H.U.G.s</option>
-                <option value="lore">Lore</option>
-              </select>
-            </div>
-
-            {/* AI Service */}
-            <div>
-              <label
-                htmlFor="ai_service"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                AI Service
-              </label>
-              <select
-                id="ai_service"
-                name="ai_service"
-                value={formData.ai_service}
-                onChange={handleInputChange}
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-              >
-                <option value="gemini">Gemini</option>
-                <option value="claude">Claude</option>
-                <option value="gpt4">GPT-4</option>
-                <option value="deepseek">DeepSeek</option>
-                <option value="grok">Grok</option>
-              </select>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label
-                htmlFor="category_id"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Category
-              </label>
-              <select
-                id="category_id"
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleInputChange}
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-                required
-              >
-                <option value={0}>Select a category...</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Prompt Text */}
-            <div>
-              <label
-                htmlFor="prompt_text"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Prompt Text *
-              </label>
-              <textarea
-                id="prompt_text"
-                name="prompt_text"
-                rows={8}
-                value={formData.prompt_text}
-                onChange={handleInputChange}
-                className="w-full rounded-md border border-gray-400 bg-gray-50 focus:outline-none dark:border-gray-500 dark:bg-gray-800 dark:text-white text-sm p-3"
-                placeholder="Write your prompt here. Be specific about what you want the AI to generate..."
-                required
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex items-center space-x-4">
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSaving ? 'Saving...' : 'Create Prompt Template'}
-              </button>
-
-              {formData.name && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData({
-                      name: '',
-                      description: '',
-                      prompt_text: '',
-                      content_type: 'article',
-                      ai_service: 'gemini',
-                      category_id: categories[0]?.id || 0,
-                    });
-                    setSaveStatus('');
-                  }}
-                  className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            {/* Status Message */}
-            {saveStatus && (
-              <div className="mt-4 p-3 rounded-md bg-blue-50 dark:bg-blue-900/20">
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                  {saveStatus}
-                </p>
+              <div className="flex justify-end">
+                <Button variant="ghost" onClick={handlePaste}>
+                  <ClipboardDocumentIcon className="h-5 w-5 mr-2" />
+                  Paste from Clipboard
+                </Button>
               </div>
-            )}
-          </form>
+              <Textarea
+                name="promptContent"
+                placeholder="Paste or type your prompt content here..."
+                value={state.promptContent}
+                onChange={(e) =>
+                  dispatch({
+                    type: "SET_PROMPT_CONTENT",
+                    payload: e.target.value,
+                  })
+                }
+                className="min-h-[400px] font-mono text-sm"
+              />
+              <div className="text-right text-sm text-gray-500">
+                {getCharCount(state.promptContent)} characters
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Configuration and Actions */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Content Type
+            </h3>
+            <ContentTypeSelector
+              selectedType={state.contentType}
+              onTypeSelect={(type: ContentType) =>
+                dispatch({ type: "SET_CONTENT_TYPE", payload: type })
+              }
+              allowedTypes={allowedPromptTypes}
+            />
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Actions
+            </h3>
+            <div className="space-y-3">
+              <Button
+                onClick={handleSave}
+                disabled={
+                  state.isSaving || !state.promptContent || !state.contentType
+                }
+                className="w-full"
+                variant="primary"
+              >
+                <CircleStackIcon className="h-5 w-5 mr-2" />
+                {state.isSaving ? "Saving..." : "Save Prompt"}
+              </Button>
+              <Button
+                onClick={handleCopy}
+                disabled={!state.promptContent}
+                className="w-full"
+                variant="outline"
+              >
+                <DocumentDuplicateIcon className="h-5 w-5 mr-2" />
+                Copy
+              </Button>
+              <Button
+                onClick={handleDownloadMarkdown}
+                disabled={!state.promptContent}
+                className="w-full"
+                variant="outline"
+              >
+                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                Download MD
+              </Button>
+              <Button
+                onClick={handleDownloadJSON}
+                disabled={!state.promptContent}
+                className="w-full"
+                variant="outline"
+              >
+                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                Download JSON
+              </Button>
+              <div className="pt-2">
+                <Button
+                  onClick={clearAllStates}
+                  disabled={
+                    !state.promptContent && !state.promptName && !state.isSaving
+                  }
+                  className="w-full"
+                  variant="danger"
+                >
+                  <TrashIcon className="h-5 w-5 mr-2" />
+                  Clear All
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Recent Prompts Feed */}
-      <div className="max-w-4xl mx-auto">
-        <PromptFeed refreshTrigger={feedRefresh} />
-      </div>
+      {/* Status Messages */}
+      {(state.saveStatus.message || state.copyStatus.message) && (
+        <div className="space-y-3 max-w-2xl mx-auto">
+          {state.saveStatus.message && (
+            <Alert
+              type={state.saveStatus.type}
+              message={state.saveStatus.message}
+            />
+          )}
+          {state.copyStatus.message && (
+            <Alert
+              type={state.copyStatus.type}
+              message={state.copyStatus.message}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

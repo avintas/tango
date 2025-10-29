@@ -17,68 +17,68 @@ export interface ProcessingResult {
 
 const PROCESSING_STEPS: ProcessingStep[] = [
   {
-    id: 'line-endings',
-    name: 'Normalize line endings',
-    description: 'Convert \\r\\n to \\n (Windows to Unix)',
+    id: "line-endings",
+    name: "Normalize line endings",
+    description: "Convert \\r\\n to \\n (Windows to Unix)",
     completed: false,
     processing: false,
   },
   {
-    id: 'remove-decorators',
-    name: 'Remove visual decorators',
+    id: "remove-decorators",
+    name: "Remove visual decorators",
     description: "Bullets, boxes, arrows (AI doesn't need them)",
     completed: false,
     processing: false,
   },
   {
-    id: 'remove-unicode',
-    name: 'Clean invisible characters',
-    description: 'Zero-width spaces, byte order marks',
+    id: "remove-unicode",
+    name: "Clean invisible characters",
+    description: "Zero-width spaces, byte order marks",
     completed: false,
     processing: false,
   },
   {
-    id: 'smart-quotes',
-    name: 'Normalize quotes',
+    id: "smart-quotes",
+    name: "Normalize quotes",
     description: '"curly" to "straight" quotes',
     completed: false,
     processing: false,
   },
   {
-    id: 'normalize-caps',
-    name: 'Normalize capitalization',
-    description: 'Title case (preserve acronyms)',
+    id: "normalize-caps",
+    name: "Normalize capitalization",
+    description: "Title case (preserve acronyms)",
     completed: false,
     processing: false,
   },
   {
-    id: 'join-sentences',
-    name: 'Join broken sentences',
-    description: 'Create continuous text flow',
+    id: "join-sentences",
+    name: "Join broken sentences",
+    description: "Create continuous text flow",
     completed: false,
     processing: false,
   },
   {
-    id: 'fix-spacing',
-    name: 'Fix spacing issues',
-    description: 'Double spaces, space before punctuation',
+    id: "fix-spacing",
+    name: "Fix spacing issues",
+    description: "Double spaces, space before punctuation",
     completed: false,
     processing: false,
   },
   {
-    id: 'final-cleanup',
-    name: 'Final cleanup',
-    description: 'Trim edges, normalize whitespace',
+    id: "final-cleanup",
+    name: "Final cleanup",
+    description: "Trim edges, normalize whitespace",
     completed: false,
     processing: false,
   },
 ];
 
 export function processText(text: string): Promise<ProcessingResult> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const startTime = Date.now();
     let processedText = text;
-    const steps = PROCESSING_STEPS.map(step => ({ ...step }));
+    const steps = PROCESSING_STEPS.map((step) => ({ ...step }));
 
     // Process each step with a small delay for visual feedback
     const processStep = async (stepIndex: number) => {
@@ -87,7 +87,7 @@ export function processText(text: string): Promise<ProcessingResult> {
         const wordCount = processedText
           .trim()
           .split(/\s+/)
-          .filter(word => word.length > 0).length;
+          .filter((word) => word.length > 0).length;
         const charCount = processedText.length;
 
         resolve({
@@ -105,37 +105,37 @@ export function processText(text: string): Promise<ProcessingResult> {
       step.processing = true;
 
       // Simulate processing time for visual feedback
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Apply the actual processing
       switch (step.id) {
-        case 'line-endings':
-          processedText = processedText.replace(/\r\n/g, '\n');
+        case "line-endings":
+          processedText = processedText.replace(/\r\n/g, "\n");
           break;
 
-        case 'remove-decorators':
+        case "remove-decorators":
           // Remove bullets and replace with period for sentence separation
-          processedText = processedText.replace(/[•●○◦▪▫]/g, '. ');
+          processedText = processedText.replace(/[•●○◦▪▫]/g, ". ");
           // Remove boxes, arrows, and other visual elements
-          processedText = processedText.replace(/[□■◻◼►▸▹◄◂]/g, '');
+          processedText = processedText.replace(/[□■◻◼►▸▹◄◂]/g, "");
           // Remove em dashes and en dashes (replace with regular dash)
-          processedText = processedText.replace(/[—–]/g, '-');
+          processedText = processedText.replace(/[—–]/g, "-");
           // Remove pipes, broken bars, and vertical separators
-          processedText = processedText.replace(/[¦|]/g, ' ');
+          processedText = processedText.replace(/[¦|]/g, " ");
           // Remove other common decorative characters
-          processedText = processedText.replace(/[†‡§¶]/g, '');
+          processedText = processedText.replace(/[†‡§¶]/g, "");
           break;
 
-        case 'remove-unicode':
+        case "remove-unicode":
           // Remove zero-width spaces and joiners
-          processedText = processedText.replace(/[\u200B-\u200D\uFEFF]/g, '');
+          processedText = processedText.replace(/[\u200B-\u200D\uFEFF]/g, "");
           // Remove byte order marks
-          processedText = processedText.replace(/\uFEFF/g, '');
+          processedText = processedText.replace(/\uFEFF/g, "");
           // Remove soft hyphens
-          processedText = processedText.replace(/\u00AD/g, '');
+          processedText = processedText.replace(/\u00AD/g, "");
           break;
 
-        case 'smart-quotes':
+        case "smart-quotes":
           processedText = processedText
             .replace(/[""]/g, '"')
             .replace(/['']/g, "'")
@@ -143,41 +143,41 @@ export function processText(text: string): Promise<ProcessingResult> {
             .replace(/[‹›]/g, "'");
           break;
 
-        case 'normalize-caps':
+        case "normalize-caps":
           // Smart capitalization: preserve acronyms (2-4 consecutive caps)
           // but normalize long runs of caps
-          processedText = processedText.replace(/\b([A-Z]{5,})\b/g, match => {
+          processedText = processedText.replace(/\b([A-Z]{5,})\b/g, (match) => {
             // Convert to title case: first letter cap, rest lowercase
             return match.charAt(0) + match.slice(1).toLowerCase();
           });
           break;
 
-        case 'join-sentences':
+        case "join-sentences":
           // Remove ALL line breaks, replace with spaces for continuous text flow
-          processedText = processedText.replace(/\n+/g, ' ');
+          processedText = processedText.replace(/\n+/g, " ");
           break;
 
-        case 'fix-spacing':
+        case "fix-spacing":
           // Fix double spaces
-          processedText = processedText.replace(/\s{2,}/g, ' ');
+          processedText = processedText.replace(/\s{2,}/g, " ");
           // Remove space before punctuation
-          processedText = processedText.replace(/\s+([.,!?;:])/g, '$1');
+          processedText = processedText.replace(/\s+([.,!?;:])/g, "$1");
           // Ensure space after punctuation (but not in numbers like 1,234)
           processedText = processedText.replace(
             /([.,!?;:])([A-Za-z])/g,
-            '$1 $2'
+            "$1 $2",
           );
           // Fix multiple periods (ellipsis)
-          processedText = processedText.replace(/\.{4,}/g, '...');
+          processedText = processedText.replace(/\.{4,}/g, "...");
           break;
 
-        case 'final-cleanup':
+        case "final-cleanup":
           // Trim leading/trailing spaces
           processedText = processedText.trim();
           // Fix multiple consecutive periods from bullet removal
-          processedText = processedText.replace(/\.{2,}\s/g, '. ');
+          processedText = processedText.replace(/\.{2,}\s/g, ". ");
           // Remove any remaining double spaces
-          processedText = processedText.replace(/\s{2,}/g, ' ');
+          processedText = processedText.replace(/\s{2,}/g, " ");
           break;
       }
 
@@ -194,5 +194,15 @@ export function processText(text: string): Promise<ProcessingResult> {
 }
 
 export function getInitialSteps(): ProcessingStep[] {
-  return PROCESSING_STEPS.map(step => ({ ...step }));
+  return PROCESSING_STEPS.map((step) => ({ ...step }));
 }
+
+export const createSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w-]+/g, "") // Remove all non-word chars
+    .replace(/--+/g, "-") // Replace multiple - with single -
+    .replace(/^-+/, "") // Trim - from start of text
+    .replace(/-+$/, ""); // Trim - from end of text
+};

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET() {
   try {
@@ -11,45 +11,42 @@ export async function GET() {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing environment variables',
+          error: "Missing environment variables",
           details: {
             hasSupabaseUrl: !!supabaseUrl,
             hasServiceKey: !!supabaseServiceKey,
-            supabaseUrl: supabaseUrl ? 'Set' : 'Missing',
-            serviceKey: supabaseServiceKey ? 'Set' : 'Missing',
+            supabaseUrl: supabaseUrl ? "Set" : "Missing",
+            serviceKey: supabaseServiceKey ? "Set" : "Missing",
           },
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Test basic connection
-    const { data, error } = await supabase
-      .from('source_content')
-      .select('count')
+    const { data, error } = await supabaseAdmin
+      .from("ingested")
+      .select("count")
       .limit(1);
 
     if (error) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Database connection failed',
+          error: "Database connection failed",
           details: error.message,
           environment: {
             hasSupabaseUrl: !!supabaseUrl,
             hasServiceKey: !!supabaseServiceKey,
           },
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Supabase connection successful',
+      message: "Supabase connection successful",
       data: data,
       environment: {
         hasSupabaseUrl: !!supabaseUrl,
@@ -60,10 +57,10 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: 'Test failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: "Test failed",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

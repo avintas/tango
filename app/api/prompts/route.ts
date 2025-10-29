@@ -1,99 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
-
-// Helper function to get user from request
-async function getUserFromRequest(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.split(' ')[1];
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  // Create a Supabase client with the user's token
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return null;
-  }
-
-  return user;
-}
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 /**
  * GET /api/prompts
- * Get all prompt templates
+ * Get all prompts with pagination
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
-    const contentType = searchParams.get('contentType');
-    const aiService = searchParams.get('aiService');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const offset = parseInt(searchParams.get("offset") || "0");
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    // Get total count
+    const { count } = await supabaseAdmin
+      .from("prompts")
+      .select("*", { count: "exact", head: true });
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
-    // Create authenticated Supabase client
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
-
-    let query = supabase
-      .from('prompt_templates')
-      .select(
-        `
-        *,
-        categories (
-          name,
-          slug
-        )
-      `
-      )
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (contentType) {
-      query = query.eq('content_type', contentType);
-    }
-
-    if (aiService) {
-      query = query.eq('ai_service', aiService);
-    }
-
-    const { data, error } = await query;
+    // Get paginated data
+    const { data, error } = await supabaseAdmin
+      .from("prompts")
+      .select("*")
+      .order("id", { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       throw new Error(`Database error: ${error.message}`);
@@ -101,134 +29,68 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data,
-      count: data?.length || 0,
+      data: data || [],
+      total: count || 0,
     });
   } catch (error) {
+    console.error("Error fetching prompts:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 /**
  * POST /api/prompts
- * Create new prompt template
+ * Create new prompt
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
     const body = await request.json();
-    const {
-      name,
-      description,
-      prompt_text,
-      content_type,
-      ai_service,
-      category_id,
-    } = body;
+    const { prompt_content, content_type, created_by } = body;
 
-    // Validation
-    if (!name?.trim()) {
+    if (!prompt_content?.trim()) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Template name is required',
+          error: "Prompt content is required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!prompt_text?.trim()) {
+    // Validate content_type
+    const validTypes = [
+      "multiple-choice",
+      "true-false",
+      "who-am-i",
+      "statistics",
+      "motivational",
+      "greetings",
+      "penalty-box-philosopher",
+    ];
+    if (!content_type || !validTypes.includes(content_type)) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Prompt text is required',
+          error: `Invalid content_type. Must be one of: ${validTypes.join(", ")}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!content_type) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Content type is required',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!ai_service) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'AI service is required',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!category_id || category_id === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Category is required',
-        },
-        { status: 400 }
-      );
-    }
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
-    // Create authenticated Supabase client
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
-
-    const { data, error } = await supabase
-      .from('prompt_templates')
+    const { data, error } = await supabaseAdmin
+      .from("prompts")
       .insert({
-        name: name.trim(),
-        description: description?.trim() || null,
-        prompt_text: prompt_text.trim(),
-        content_type,
-        ai_service,
-        category_id,
-        created_by: user.id,
+        prompt_content: prompt_content.trim(),
+        content_type: content_type,
+        created_by: created_by,
       })
-      .select(
-        `
-        *,
-        categories (
-          name,
-          slug
-        )
-      `
-      )
+      .select()
       .single();
 
     if (error) {
@@ -238,15 +100,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data,
-      message: 'Prompt template created successfully',
+      message: "Prompt created successfully",
     });
   } catch (error) {
+    console.error("Error creating prompt:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

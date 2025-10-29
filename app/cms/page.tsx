@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth-context';
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   DocumentTextIcon,
   ChartBarIcon,
@@ -9,113 +9,127 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline';
+  ArchiveBoxIcon,
+  PencilSquareIcon,
+  BookOpenIcon,
+} from "@heroicons/react/24/outline";
 
 interface DashboardStats {
   totalSourcedText: number;
   totalProcessedContent: number;
-  totalPromptTemplates: number;
   recentActivity: number;
+}
+
+interface TriviaStats {
+  draft?: number;
+  published?: number;
+  archived?: number;
 }
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalSourcedText: 0,
     totalProcessedContent: 0,
-    totalPromptTemplates: 0,
     recentActivity: 0,
   });
+  const [triviaStats, setTriviaStats] = useState<TriviaStats>({});
   const [loading, setLoading] = useState(true);
-  const { session } = useAuth();
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
-      }
-
       try {
         // Fetch sourced text count
-        const sourcedResponse = await fetch('/api/sourced-text?limit=1', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
+        const sourcedResponse = await fetch("/api/content-source?limit=1");
         const sourcedResult = await sourcedResponse.json();
         const sourcedCount = sourcedResult.count || 0;
-
-        // Fetch prompt templates count
-        const promptsResponse = await fetch('/api/prompts?limit=1', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
-        const promptsResult = await promptsResponse.json();
-        const promptsCount = promptsResult.count || 0;
 
         setStats({
           totalSourcedText: sourcedCount,
           totalProcessedContent: 0, // Will be implemented when processed_content API is ready
-          totalPromptTemplates: promptsCount,
           recentActivity: sourcedCount, // For now, same as sourced text
         });
+
+        const statsResponse = await fetch("/api/trivia-questions/stats");
+        const statsResult = await statsResponse.json();
+        if (statsResult.success) {
+          setTriviaStats(statsResult.stats);
+        }
       } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error);
+        console.error("Failed to fetch dashboard stats:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardStats();
-  }, [session]);
+  }, []);
 
   const statCards = [
     {
-      name: 'Source Content',
+      name: "Source Content",
       value: stats.totalSourcedText,
       icon: DocumentTextIcon,
-      color: 'bg-blue-500',
-      description: 'Text items ready for processing',
+      color: "bg-blue-500",
+      description: "Text items ready for processing",
     },
     {
-      name: 'Processed Content',
+      name: "Processed Content",
       value: stats.totalProcessedContent,
       icon: CheckCircleIcon,
-      color: 'bg-green-500',
-      description: 'AI-generated content ready for export',
+      color: "bg-green-500",
+      description: "AI-generated content ready for export",
     },
     {
-      name: 'Prompt Templates',
-      value: stats.totalPromptTemplates,
-      icon: CogIcon,
-      color: 'bg-purple-500',
-      description: 'AI prompts ready for use',
-    },
-    {
-      name: 'Recent Activity',
+      name: "Recent Activity",
       value: stats.recentActivity,
       icon: ClockIcon,
-      color: 'bg-orange-500',
-      description: 'Items added this week',
+      color: "bg-orange-500",
+      description: "Items added this week",
+    },
+  ];
+
+  const triviaStatCards = [
+    {
+      name: "Questions in Draft",
+      value: triviaStats.draft || 0,
+      icon: PencilSquareIcon,
+      color: "bg-yellow-500",
+      description: "Ready for review",
+      href: "/cms/review",
+    },
+    {
+      name: "Published Questions",
+      value: triviaStats.published || 0,
+      icon: BookOpenIcon,
+      color: "bg-green-500",
+      description: "Available in library",
+      href: "/cms/trivia-questions",
+    },
+    {
+      name: "Archived Questions",
+      value: triviaStats.archived || 0,
+      icon: ArchiveBoxIcon,
+      color: "bg-gray-500",
+      description: "Saved for later",
+      href: "/cms/trivia-questions/archived",
     },
   ];
 
   const quickActions = [
     {
-      name: 'Add Source Content',
-      description: 'Paste and save new content for AI processing',
-      href: '/cms/sourcing',
+      name: "Add Source Content",
+      description: "Paste and save new content for AI processing",
+      href: "/cms/sourcing",
       icon: DocumentTextIcon,
-      color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     },
     {
-      name: 'Create Prompt Template',
-      description: 'Build AI prompts for content generation',
-      href: '/cms/prompts/create',
-      icon: CogIcon,
+      name: "Process Trivia",
+      description: "Generate trivia questions from source content",
+      href: "/cms/processing/trivia",
+      icon: ChartBarIcon,
       color:
-        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     },
   ];
 
@@ -128,12 +142,41 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
 
+      {/* Trivia Stats Grid */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Trivia Questions Overview
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {triviaStatCards.map((stat) => (
+            <Link href={stat.href} key={stat.name} className="block">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-shadow">
+                <div className="flex items-center">
+                  <div className={`flex-shrink-0 ${stat.color} rounded-md p-3`}>
+                    <stat.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">
+                      {stat.name}
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {stat.value}
+                    </p>
+                    <p className="text-xs text-gray-400">{stat.description}</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map(stat => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {statCards.map((stat) => (
           <div
             key={stat.name}
             className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm"
@@ -160,7 +203,7 @@ export default function DashboardPage() {
           Quick Actions
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {quickActions.map(action => (
+          {quickActions.map((action) => (
             <a
               key={action.name}
               href={action.href}

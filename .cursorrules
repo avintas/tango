@@ -3,8 +3,8 @@
 ## Project Overview
 - Next.js 14.2.33 with App Router
 - TypeScript with strict mode
-- Tailwind CSS for styling
-- Catalyst UI Kit components
+- Tailwind CSS for styling (pure Tailwind, no UI frameworks)
+- Custom UI components in `/components/ui`
 - Husky + lint-staged for code quality
 - Prettier for code formatting
 
@@ -26,11 +26,11 @@
 - Prefer composition over inheritance
 
 ### Styling
-- Use Tailwind CSS utility classes
-- Leverage Catalyst UI Kit components when possible
+- Use Tailwind CSS utility classes exclusively
+- Use custom UI components from `/components/ui` (Button, Input, Textarea, Heading, Alert)
 - Use CSS custom properties for dynamic values
 - Implement responsive design with mobile-first approach
-- Use semantic color tokens (zinc, indigo, etc.)
+- Use semantic color tokens (gray, indigo, red, green, blue, etc.)
 
 ### Component Architecture
 - Keep components small and focused
@@ -120,17 +120,32 @@
 
 ## Component Usage Examples
 
-### Catalyst Components
+### Custom UI Components (from `/components/ui`)
 ```tsx
 // Button variants
-<Button color="indigo">Primary</Button>
-<Button outline>Outline</Button>
-<Button plain>Plain</Button>
+<Button variant="primary">Primary Action</Button>
+<Button variant="outline">Secondary Action</Button>
+<Button variant="ghost">Subtle Action</Button>
+<Button variant="danger">Delete</Button>
 
 // Form components
-<Input placeholder="Enter text..." />
-<Textarea placeholder="Enter message..." />
-<Select>...</Select>
+<Input 
+  label="Email" 
+  placeholder="Enter email..." 
+  error="Invalid email"
+/>
+<Textarea 
+  label="Message" 
+  placeholder="Enter message..." 
+/>
+
+// Headings
+<Heading level={1}>Page Title</Heading>
+<Heading level={2}>Section Title</Heading>
+
+// Alerts
+<Alert type="success" message="Saved successfully!" />
+<Alert type="error" message="Something went wrong" />
 ```
 
 ### Tailwind Patterns
