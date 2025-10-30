@@ -52,9 +52,29 @@ export async function POST(request: NextRequest) {
 
     const slug = createSlug(name);
 
+    const { data: lastCategory, error: orderError } = await supabaseAdmin
+      .from("categories")
+      .select("display_order")
+      .order("display_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (orderError) throw orderError;
+
+    const nextDisplayOrder = (lastCategory?.display_order ?? 0) + 1;
+
+    const isActiveValue = typeof is_active === "boolean" ? is_active : true;
+
     const { data, error } = await supabaseAdmin
       .from("categories")
-      .insert({ name, slug, description, emoji, is_active })
+      .insert({
+        name,
+        slug,
+        description,
+        emoji,
+        is_active: isActiveValue,
+        display_order: nextDisplayOrder,
+      })
       .select()
       .single();
 

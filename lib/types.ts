@@ -187,3 +187,23 @@ export type Question = TriviaQuestion;
  * @deprecated Use ALL_CONTENT_TYPES instead
  */
 export const CONTENT_TYPES = ALL_CONTENT_TYPES;
+
+// ========================================================================
+// CMS & APP-SPECIFIC TYPES
+// ========================================================================
+
+/**
+ * Structure for trivia categories
+ * Saves to: categories table
+ */
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  emoji?: string | null;
+  is_active: boolean;
+  display_order: number | null;
+  created_at: string;
+  updated_at: string;
+}
