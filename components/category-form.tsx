@@ -9,7 +9,13 @@ import { Switch } from "@/components/switch";
 import { Alert } from "@/components/alert";
 import { createSlug } from "@/lib/text-processing";
 import type { Category } from "@/lib/types";
-import { Field, FieldGroup, Fieldset, Label } from "@/components/fieldset";
+import {
+  Field,
+  FieldGroup,
+  Fieldset,
+  Label,
+  Description,
+} from "@/components/fieldset";
 
 interface CategoryFormProps {
   category?: Category;
@@ -123,12 +129,12 @@ export default function CategoryForm({
             checked={isActive}
             onChange={setIsActive}
             color="indigo"
-            description={
-              isActive
-                ? "This category is active and will be visible."
-                : "This category is inactive and will be hidden."
-            }
           />
+          <Description>
+            {isActive
+              ? "This category is active and will be visible."
+              : "This category is inactive and will be hidden."}
+          </Description>
         </Field>
         <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
           <Button type="button" plain onClick={() => router.back()}>
