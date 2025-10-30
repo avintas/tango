@@ -275,7 +275,7 @@ export default function MainGeneratorPage() {
       return "/api/trivia/save";
     }
     if (uniContentTypes.includes(contentType)) {
-      return "/api/uni-content/save";
+      return "/api/content/save";
     }
     return ""; // Should not happen with a valid content type
   };

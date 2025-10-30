@@ -51,7 +51,7 @@ const getSaveEndpoint = (contentType: ContentType): string => {
     "penalty-box-philosopher",
     "wisdom",
   ];
-  if (uniContentTypes.includes(contentType)) return "/api/uni-content/save";
+  if (uniContentTypes.includes(contentType)) return "/api/content/save";
 
   return "";
 };

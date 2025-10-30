@@ -31,7 +31,7 @@ export async function saveUniContent(
   content: UniContent,
 ): Promise<{ success: boolean; data?: UniContent; error?: string }> {
   try {
-    const response = await fetch("/api/uni-content/save", {
+    const response = await fetch("/api/content/save", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

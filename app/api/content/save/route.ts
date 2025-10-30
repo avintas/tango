@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     switch (contentType) {
       case "statistics":
       case "statistic": // Handle both singular and plural
-        tableName = "stats";
+        tableName = "collection_stats";
         recordsToInsert = itemsToSave.map((item) => ({
           stat_text: item.content_text,
           stat_value: item.stat_value || null,
@@ -49,9 +49,10 @@ export async function POST(req: Request) {
         break;
 
       case "motivational":
-        tableName = "motivational";
+        tableName = "collection_motivational";
         recordsToInsert = itemsToSave.map((item) => ({
           quote: item.content_text,
+          author: item.author || null,
           context: item.context || null,
           theme: item.theme || null,
           category: item.category || null,
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
 
       case "penalty-box-philosopher":
       case "wisdom":
-        tableName = "wisdom";
+        tableName = "collection_wisdom";
         recordsToInsert = itemsToSave.map((item) => ({
           title: item.content_title || "Untitled",
           musing: item.musings || item.content_text,

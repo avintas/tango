@@ -52,12 +52,6 @@ const libraryActions = [
 
 const contentLibrariesActions = [
   {
-    id: 1,
-    name: "Trivia Questions",
-    href: "/cms/trivia-questions",
-    initial: "❓",
-  },
-  {
     id: 6,
     name: "Archived Questions",
     href: "/cms/trivia-questions/archived",
