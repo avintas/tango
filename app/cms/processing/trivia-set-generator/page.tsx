@@ -92,7 +92,7 @@ export default function TriviaSetGeneratorPage() {
     }
   };
 
-  const handleRemoveQuestion = (questionId: string) => {
+  const handleRemoveQuestion = (questionId: number) => {
     setSelectedQuestions(selectedQuestions.filter((q) => q.id !== questionId));
     setStatusMessage(`Question #${questionId} removed from your set.`);
     setStatusType("info");

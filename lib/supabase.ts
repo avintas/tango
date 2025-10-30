@@ -13,10 +13,12 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Define a union type for content_type to ensure type safety and consistency.
+// DEPRECATED: Old ContentType definition - use @/lib/types instead
+// This is kept for backward compatibility with legacy code only
+// @deprecated Use ContentType from @/lib/types.ts instead
 export type ContentType =
   | "trivia"
-  | "stats"
+  | "stat" // Changed from "stats"
   | "motivational"
   | "quotes"
   | "stories";
@@ -27,7 +29,7 @@ export interface IngestedContent {
   content_text: string;
   word_count?: number;
   char_count?: number;
-  used_for?: string[]; // Array tracking usage: 'mc', 'tf', 'whoami', 'stats', 'motivational', 'greetings', 'pbp'
+  used_for?: string[]; // Array tracking usage: 'mc', 'tf', 'whoami', 'stat', 'motivational', 'greeting', 'pbp'
   themes?: string;
 }
 
@@ -91,7 +93,7 @@ export interface Category {
 
 // Types for trivia_questions table
 export interface TriviaQuestion {
-  id: string;
+  id: number;
   question_text: string;
   question_type: "multiple-choice" | "true-false" | "who-am-i";
   correct_answer: string;
@@ -146,68 +148,4 @@ export interface CreateTriviaSet {
   question_data: TriviaQuestionData[];
   status?: "draft" | "review" | "approved" | "archived";
   visibility?: "Public" | "Unlisted" | "Private";
-}
-
-// Types for the statistics table
-// Actual schema: id, stat_category, stat_type, season_year, social_copy, tags
-export interface StatsContent {
-  id: number;
-  stat_category?: string;
-  stat_type?: string;
-  season_year?: string;
-  social_copy?: string;
-  tags?: string[];
-}
-
-export interface CreateStatsContent {
-  stat_category?: string;
-  stat_type?: string;
-  season_year?: string;
-  social_copy?: string;
-  tags?: string[];
-}
-
-// Types for the motivational table
-// Actual schema: id, quote_text, attribution, context_story, theme
-export interface MotivationalContent {
-  id: number;
-  quote_text: string;
-  attribution?: string;
-  context_story?: string;
-  theme?: string;
-}
-
-export interface CreateMotivationalContent {
-  quote_text: string;
-  attribution?: string;
-  context_story?: string;
-  theme?: string;
-}
-
-// Types for the greetings table (HUG - Hockey Universal Greeting)
-// Actual schema: id, greeting_text, theme, tone
-export interface GreetingsContent {
-  id: number;
-  greeting_text: string;
-  theme?: string;
-  tone?: string;
-}
-
-export interface CreateGreetingsContent {
-  greeting_text: string;
-  theme?: string;
-  tone?: string;
-}
-
-// Types for the pbp table (Penalty Box Philosopher)
-// Actual schema: id, reflection_text, theme
-export interface PbpContent {
-  id: number;
-  reflection_text: string;
-  theme?: string;
-}
-
-export interface CreatePbpContent {
-  reflection_text: string;
-  theme?: string;
 }

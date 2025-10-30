@@ -7,14 +7,7 @@ export interface ProcessingSession {
   sourceContent: string;
   sourceContentId: string;
   aiPrompt: string;
-  contentType:
-    | "mc"
-    | "tf"
-    | "whoami"
-    | "stats"
-    | "motivational"
-    | "greetings"
-    | "lore";
+  contentType: "mc" | "tf" | "whoami" | "stat" | "motivational" | "greeting";
   libraryReturnPath: string;
 }
 

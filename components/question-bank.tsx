@@ -7,7 +7,7 @@ import {
   PlusCircleIcon,
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
-import { TriviaQuestion } from "@/lib/types";
+import { TriviaQuestion } from "@/lib/supabase";
 
 interface QuestionBankProps {
   onSelectQuestion: (question: TriviaQuestion) => void;

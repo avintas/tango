@@ -136,12 +136,6 @@ export default function DraftTriviaSetsPage() {
                         {set.question_count} questions
                       </span>
                     )}
-
-                    {set.target_audience && (
-                      <span className="text-xs text-gray-500">
-                        • {set.target_audience}
-                      </span>
-                    )}
                   </div>
 
                   {set.tags && set.tags.length > 0 && (
@@ -225,14 +219,6 @@ export default function DraftTriviaSetsPage() {
                           <dt className="text-gray-600">Theme:</dt>
                           <dd className="font-medium text-gray-900">
                             {selectedSet.theme}
-                          </dd>
-                        </div>
-                      )}
-                      {selectedSet.target_audience && (
-                        <div className="flex justify-between">
-                          <dt className="text-gray-600">Audience:</dt>
-                          <dd className="font-medium text-gray-900">
-                            {selectedSet.target_audience}
                           </dd>
                         </div>
                       )}

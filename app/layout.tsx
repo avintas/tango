@@ -1,12 +1,13 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Tango App',
-  description: 'A Next.js app with TypeScript and Tailwind CSS',
+  title: "Tango CMS - Hockey Content Management",
+  description:
+    "Professional content management system for hockey trivia, statistics, wisdom, greetings, and motivational content.",
 };
 
 export default function RootLayout({
@@ -15,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full bg-white dark:bg-gray-900">
+    <html lang="en" className="h-full bg-white">
       <body className={`${inter.className} h-full`}>{children}</body>
     </html>
   );

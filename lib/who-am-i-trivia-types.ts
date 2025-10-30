@@ -15,8 +15,8 @@ export interface WhoAmITrivia {
   used_in?: string[] | null;
   source_content_id?: number | null;
   display_order?: number | null;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
   published_at?: string | null;
   archived_at?: string | null;
 }

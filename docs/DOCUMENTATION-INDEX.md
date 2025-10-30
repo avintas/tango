@@ -67,7 +67,7 @@ This index helps you find the right documentation quickly.
 | `onlyhockey-examples/vanilla-js-example.js` | Plain JavaScript            |
 | `onlyhockey-examples/react-example.tsx`     | React/Next.js               |
 | `onlyhockey-api-types.ts`                   | TypeScript type definitions |
-| `test-api.html`                             | Browser testing page        |
+| `docs/test-api.html`                        | Browser testing page        |
 
 ---
 
@@ -139,7 +139,7 @@ This index helps you find the right documentation quickly.
 1. Read: `ONLYHOCKEY-SETUP-CHECKLIST.md`
 2. Choose API: `PUBLIC-WISDOM-API.md`, `PUBLIC-GREETINGS-API.md`, `PUBLIC-MOTIVATIONAL-API.md`, `PUBLIC-STATS-API.md`, or `PUBLIC-HERO-COLLECTIONS-API.md`
 3. Copy: Code from `onlyhockey-examples/`
-4. Test: Use `test-api.html`
+4. Test: Use `docs/test-api.html`
 
 ### "I need to understand the architecture"
 
@@ -195,8 +195,9 @@ This index helps you find the right documentation quickly.
 └── react-example.tsx              ← React/Next.js
 
 /
-├── onlyhockey-api-types.ts        ← TypeScript types
-└── test-api.html                  ← Browser testing
+└── docs/
+    ├── onlyhockey-api-types.ts    ← TypeScript types
+    └── test-api.html              ← Browser testing
 ```
 
 ### SQL Migrations
@@ -264,7 +265,7 @@ This index helps you find the right documentation quickly.
 
 1. Follow pattern to create a new test library
 2. Create public API endpoints
-3. Test with `test-api.html`
+3. Test with `docs/test-api.html`
 
 **Week 3: Real Work**
 
@@ -279,7 +280,7 @@ This index helps you find the right documentation quickly.
 
 1. Read `ONLYHOCKEY-HANDOFF-PACKAGE.md` (10 min)
 2. Follow `ONLYHOCKEY-SETUP-CHECKLIST.md` (30 min)
-3. Test API with browser or `test-api.html` (15 min)
+3. Test API with browser or `docs/test-api.html` (15 min)
 
 **Day 2: First Integration**
 
@@ -337,7 +338,7 @@ This index helps you find the right documentation quickly.
 2. **Use wisdom as reference** - It's the most complete example
 3. **Follow the pattern** - Don't reinvent, use established conventions
 4. **Document as you go** - Create PUBLIC-\*-API.md when you create APIs
-5. **Test with test-api.html** - Quick way to verify APIs work
+5. **Test with docs/test-api.html** - Quick way to verify APIs work
 
 ---
 

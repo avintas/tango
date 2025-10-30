@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
       "multiple-choice",
       "true-false",
       "who-am-i",
-      "statistics",
+      "stat",
       "motivational",
-      "greetings",
+      "greeting",
       "penalty-box-philosopher",
     ];
     if (!content_type || !validTypes.includes(content_type)) {

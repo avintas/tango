@@ -272,7 +272,7 @@ Contact the Tango CMS team!
 1. `ONLYHOCKEY-API-HANDOFF.md` - This guide
 2. `onlyhockey-api-types.ts` - TypeScript types
 3. `onlyhockey-examples/` - Code examples
-4. `test-api.html` - Simple test page
+4. `docs/test-api.html` - Simple test page
 
 ---
 

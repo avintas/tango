@@ -291,7 +291,7 @@ export default function ContentLibraryPage() {
                             : "text-gray-900",
                         )}
                       >
-                        {item.title || `Item #${item.id}`}
+                        {`Item #${item.id}`}
                       </h4>
                       {item.used_for && item.used_for.length > 0 && (
                         <div className="flex gap-1 flex-shrink-0">
@@ -343,7 +343,7 @@ export default function ContentLibraryPage() {
             {selectedItem ? (
               <div>
                 <h2 className="text-base font-bold mb-4">
-                  {selectedItem.title}
+                  {`Item #${selectedItem.id}`}
                 </h2>
                 <p className="text-xs whitespace-pre-wrap leading-relaxed">
                   {selectedItem.content_text}

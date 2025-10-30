@@ -16,7 +16,7 @@ function formatContentForDisplay(data: TriviaQuestion[]): string {
         65 + options.indexOf(q.correct_answer),
       );
 
-      return `**Question ${index + 1}:** ${q.question}\n\n${optionsString}\n\n**Correct Answer:** ${answerLetter}\n\n**Explanation:** ${q.explanation}`;
+      return `**Question ${index + 1}:** ${q.question_text}\n\n${optionsString}\n\n**Correct Answer:** ${answerLetter}\n\n**Explanation:** ${q.explanation}`;
     })
     .join("\n\n---\n\n");
 }

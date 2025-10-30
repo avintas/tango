@@ -137,9 +137,16 @@ export default function CreateTriviaSetPage() {
 
     // Generate tags
     const allThemes = Array.from(
-      new Set(selectedQuestions.map((q) => q.theme).filter(Boolean)),
+      new Set(
+        selectedQuestions
+          .map((q) => q.theme)
+          .filter((t): t is string => Boolean(t)),
+      ),
     );
-    const generatedTags = [...allThemes, "hockey", "trivia"].slice(0, 5);
+    const generatedTags: string[] = [...allThemes, "hockey", "trivia"].slice(
+      0,
+      5,
+    );
 
     setTitle(generatedTitle);
     setDescription(generatedDescription);

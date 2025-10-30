@@ -280,7 +280,7 @@ export default function PromptsLibraryPage() {
                           : "text-gray-900",
                       )}
                     >
-                      {prompt.prompt_name || `Prompt #${prompt.id}`}
+                      {`Prompt #${prompt.id}`}
                     </h4>
                     {prompt.content_type && (
                       <p className="text-xs text-gray-500 mt-1">
@@ -317,7 +317,7 @@ export default function PromptsLibraryPage() {
               <div className="space-y-4">
                 <div>
                   <h2 className="text-xl font-bold mb-2">
-                    {selectedPrompt.prompt_name}
+                    {`Prompt #${selectedPrompt.id}`}
                   </h2>
                   {selectedPrompt.content_type && (
                     <p className="text-sm text-gray-600 mb-4">

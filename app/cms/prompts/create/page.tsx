@@ -88,9 +88,9 @@ const allowedPromptTypes: ContentType[] = [
   "multiple-choice",
   "true-false",
   "who-am-i",
-  "stats",
+  "stat",
   "motivational",
-  "greetings",
+  "greeting",
   "penalty-box-philosopher",
 ];
 

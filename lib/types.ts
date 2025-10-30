@@ -11,7 +11,7 @@
 /**
  * All valid content types in the system
  * Collection types save to dedicated tables (collection_*)
- * Trivia types save to trivia_questions table
+ * Trivia types save to dedicated trivia tables (trivia_multiple_choice, true_false_trivia, trivia_who_am_i)
  */
 export type ContentType =
   // Collection content types
@@ -114,7 +114,7 @@ export interface UniContent {
  */
 export interface TriviaQuestion {
   question_type: "multiple-choice" | "true-false" | "who-am-i";
-  question: string;
+  question_text: string;
   correct_answer: string;
   wrong_answers: string[];
   explanation?: string | null;
@@ -165,9 +165,9 @@ export function getTableName(contentType: ContentType): string {
     motivational: "collection_motivational",
     wisdom: "collection_wisdom",
     "penalty-box-philosopher": "collection_wisdom", // Uses same table as wisdom
-    "multiple-choice": "trivia_questions",
-    "true-false": "trivia_questions",
-    "who-am-i": "trivia_questions",
+    "multiple-choice": "trivia_multiple_choice",
+    "true-false": "true_false_trivia",
+    "who-am-i": "trivia_who_am_i",
   };
   return tableMap[contentType];
 }

@@ -50,15 +50,21 @@ export function useSystemStatus() {
           throw new Error(`Source count error: ${sourceError.message}`);
         }
 
-        // Get trivia questions count
-        const { count: triviaCount, error: triviaError } = await supabase
-          .from("trivia_questions")
+        // Get trivia questions count from all three trivia tables
+        const { count: mcCount } = await supabase
+          .from("trivia_multiple_choice")
           .select("*", { count: "exact", head: true });
 
-        if (triviaError) {
-          console.log("Trivia count error:", triviaError);
-          // Don't throw - just use 0 if there's an error
-        }
+        const { count: tfCount } = await supabase
+          .from("true_false_trivia")
+          .select("*", { count: "exact", head: true });
+
+        const { count: whoamiCount } = await supabase
+          .from("trivia_who_am_i")
+          .select("*", { count: "exact", head: true });
+
+        const triviaCount =
+          (mcCount || 0) + (tfCount || 0) + (whoamiCount || 0);
 
         setStatus({
           apiConfigured,

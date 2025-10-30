@@ -48,3 +48,20 @@ export interface StatUpdateInput {
   published_at?: string;
   archived_at?: string;
 }
+
+export interface StatFetchParams {
+  status?: string;
+  theme?: string;
+  category?: string;
+  stat_category?: string;
+  year?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export interface StatApiResponse {
+  success: boolean;
+  data?: Stat | Stat[];
+  count?: number;
+  error?: string;
+}

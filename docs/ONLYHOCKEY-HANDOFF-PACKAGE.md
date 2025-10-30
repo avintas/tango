@@ -23,7 +23,7 @@ This package contains everything the OnlyHockey development team needs to integr
 
 ### 📝 Code Files
 
-3. **`onlyhockey-api-types.ts`**
+3. **`docs/onlyhockey-api-types.ts`**
    - TypeScript type definitions
    - Copy into your project
    - Provides type safety for API responses
@@ -42,7 +42,7 @@ This package contains everything the OnlyHockey development team needs to integr
 
 ### 🧪 Testing
 
-6. **`test-api.html`**
+6. **`docs/test-api.html`**
    - Simple HTML test page
    - Open in browser to test API
    - No build tools needed
@@ -64,14 +64,14 @@ This package contains everything the OnlyHockey development team needs to integr
 
 ### Step 1: Test the API
 
-1. Open `test-api.html` in your browser
+1. Open `docs/test-api.html` in your browser
 2. Replace `[YOUR-TANGO-DOMAIN]` with actual Tango CMS URL
 3. Click "Test: Random Wisdom"
 4. ✅ You should see green success message
 
 ### Step 2: Copy Types
 
-1. Copy `onlyhockey-api-types.ts` into your OnlyHockey project
+1. Copy `docs/onlyhockey-api-types.ts` into your OnlyHockey project
 2. Update import paths as needed
 
 ### Step 3: Use Examples
@@ -93,13 +93,13 @@ onlyhockey-integration-package/
 ├── ONLYHOCKEY-API-HANDOFF.md         ← API documentation
 ├── PUBLIC-WISDOM-API.md              ← Detailed reference
 │
-├── onlyhockey-api-types.ts           ← TypeScript types
+├── docs/
+│   ├── onlyhockey-api-types.ts       ← TypeScript types
+│   └── test-api.html                 ← Browser test page
 │
-├── onlyhockey-examples/
-│   ├── vanilla-js-example.js         ← JavaScript examples
-│   └── react-example.tsx             ← React/Next.js examples
-│
-└── test-api.html                     ← Browser test page
+└── onlyhockey-examples/
+    ├── vanilla-js-example.js         ← JavaScript examples
+    └── react-example.tsx             ← React/Next.js examples
 ```
 
 ---

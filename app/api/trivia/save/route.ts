@@ -24,19 +24,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Determine which table to use based on question type
+    const questionType = itemsToSave[0].question_type;
+    let tableName: string;
+
+    switch (questionType) {
+      case "multiple-choice":
+        tableName = "trivia_multiple_choice";
+        break;
+      case "true-false":
+        tableName = "true_false_trivia";
+        break;
+      case "who-am-i":
+        tableName = "trivia_who_am_i";
+        break;
+      default:
+        return NextResponse.json(
+          { success: false, error: `Unknown question type: ${questionType}` },
+          { status: 400 },
+        );
+    }
+
     const recordsToInsert = itemsToSave.map((item) => ({
       question_type: item.question_type,
-      question_text: item.question, // Map from 'question' to 'question_text' for database
+      question_text: item.question_text,
       correct_answer: item.correct_answer,
       wrong_answers: item.wrong_answers,
       explanation: item.explanation,
       theme: item.theme,
       created_by: createdBy,
-      source_content_id: sourceContentId ? Number(sourceContentId) : null, // Assuming you add this column
+      source_content_id: sourceContentId ? Number(sourceContentId) : null,
     }));
 
     const { data, error, count } = await supabaseAdmin
-      .from("trivia_questions")
+      .from(tableName)
       .insert(recordsToInsert)
       .select();
 

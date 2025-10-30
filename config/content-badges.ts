@@ -61,16 +61,8 @@ export const CONTENT_BADGES: Record<string, BadgeConfig> = {
     textColor: "text-purple-800",
     title: "Used for Who Am I? trivia",
   },
-  stats: {
-    key: "stats",
-    label: "S",
-    color: "orange",
-    bgColor: "bg-orange-100",
-    textColor: "text-orange-800",
-    title: "Used for Statistics content",
-  },
-  statistic: {
-    key: "statistic",
+  stat: {
+    key: "stat",
     label: "S",
     color: "orange",
     bgColor: "bg-orange-100",
@@ -84,14 +76,6 @@ export const CONTENT_BADGES: Record<string, BadgeConfig> = {
     bgColor: "bg-pink-100",
     textColor: "text-pink-800",
     title: "Used for Motivational content",
-  },
-  greetings: {
-    key: "greetings",
-    label: "G",
-    color: "yellow",
-    bgColor: "bg-yellow-100",
-    textColor: "text-yellow-800",
-    title: "Used for Greetings content",
   },
   greeting: {
     key: "greeting",

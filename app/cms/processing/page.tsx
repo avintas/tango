@@ -120,13 +120,6 @@ export default function ProcessingPage() {
       color: "bg-green-500",
     },
     {
-      id: "lore",
-      name: "Lore",
-      description: "Stories and legends",
-      icon: "📚",
-      color: "bg-yellow-500",
-    },
-    {
       id: "motivational",
       name: "Motivational",
       description: "Inspirational content",
@@ -134,7 +127,7 @@ export default function ProcessingPage() {
       color: "bg-pink-500",
     },
     {
-      id: "greetings",
+      id: "greeting",
       name: "Greetings",
       description: "Welcome messages",
       icon: "👋",
@@ -146,9 +139,8 @@ export default function ProcessingPage() {
   const contentTypeMapping: Record<string, string> = {
     trivia_sets: "trivia",
     statistics: "statistics",
-    lore: "lore",
     motivational: "motivational",
-    greetings: "greetings",
+    greeting: "greeting",
   };
 
   const handleCardClick = (cardId: string) => {

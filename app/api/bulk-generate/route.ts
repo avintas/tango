@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { ContentType } from "@/components/content-type-selector";
+import { ContentType } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,15 +46,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Define the 7 content types to be generated
+    // 3. Define the content types to be generated
     const contentTypesToGenerate: ContentType[] = [
       "multiple-choice",
       "true-false",
       "who-am-i",
-      "stats",
+      "stat",
       "motivational",
-      "greetings",
+      "greeting",
       "penalty-box-philosopher",
+      "wisdom",
     ];
 
     // 4. Create a job for each content type

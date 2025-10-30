@@ -33,7 +33,7 @@ Before you start integrating the Tango Wisdom API into OnlyHockey, go through th
 
 ### Option B: Use Test HTML File
 
-- [ ] Open `test-api.html` in browser
+- [ ] Open `docs/test-api.html` in browser
 - [ ] Update the API URL in the form
 - [ ] Click "Test: Random Wisdom"
 - [ ] I see green success message with wisdom data
@@ -174,7 +174,7 @@ If you get stuck:
 
 1. Check `ONLYHOCKEY-API-HANDOFF.md` for detailed documentation
 2. Review example code in `onlyhockey-examples/` folder
-3. Test API with `test-api.html` to isolate issues
+3. Test API with `docs/test-api.html` to isolate issues
 4. Contact Tango CMS team for API-related issues
 
 ---

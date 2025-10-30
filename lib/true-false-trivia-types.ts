@@ -43,10 +43,10 @@ export interface TrueFalseTriviaFetchParams {
   order?: "asc" | "desc";
 }
 
-// Type for a standardized API response when fetching multiple questions
+// Type for a standardized API response when fetching questions
 export interface TrueFalseTriviaApiResponse {
-  data: TrueFalseTrivia[];
-  total: number;
-  limit: number;
-  offset: number;
+  success: boolean;
+  data?: TrueFalseTrivia | TrueFalseTrivia[];
+  count?: number;
+  error?: string;
 }
