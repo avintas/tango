@@ -90,14 +90,6 @@ export default function DashboardPage() {
 
   const triviaStatCards = [
     {
-      name: "Questions in Draft",
-      value: triviaStats.draft || 0,
-      icon: PencilSquareIcon,
-      color: "bg-yellow-500",
-      description: "Ready for review",
-      href: "/cms/review",
-    },
-    {
       name: "Published Questions",
       value: triviaStats.published || 0,
       icon: BookOpenIcon,

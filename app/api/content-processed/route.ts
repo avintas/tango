@@ -50,8 +50,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body: CreateContentProcessed = await request.json();
-    const { title, content_type, markdown_content, status, published_at } =
-      body;
+    const { title, content_type, markdown_content, status } = body;
 
     // Validation
     if (!title || !content_type || !markdown_content) {
@@ -70,12 +69,6 @@ export async function POST(request: NextRequest) {
       markdown_content: markdown_content.trim(),
       status: status || "draft",
     };
-
-    if (published_at) {
-      insertData.published_at = published_at;
-    } else if (status === "published") {
-      insertData.published_at = new Date().toISOString();
-    }
 
     const { data, error } = await supabaseAdmin
       .from("content_processed")
@@ -118,10 +111,6 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updateData: any = { ...updates };
-
-    if (status === "published" && !updateData.published_at) {
-      updateData.published_at = new Date().toISOString();
-    }
 
     if (status) {
       updateData.status = status;

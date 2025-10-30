@@ -51,7 +51,6 @@ export interface ContentProcessed {
   content_type: ContentType;
   markdown_content: string;
   status: "draft" | "published";
-  published_at?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -62,7 +61,6 @@ export interface CreateContentProcessed {
   content_type: ContentType;
   markdown_content: string;
   status?: "draft" | "published";
-  published_at?: string;
 }
 
 // Types for the prompts table
@@ -128,10 +126,8 @@ export interface TriviaSet {
   difficulty?: string;
   question_count: number;
   question_data: TriviaQuestionData[];
-  status: "draft" | "review" | "approved" | "archived";
+  status: "draft" | "published" | "archived";
   visibility: "Public" | "Unlisted" | "Private";
-  published_at?: string;
-  scheduled_for?: string;
   created_at: string;
   updated_at: string;
 }
@@ -146,6 +142,6 @@ export interface CreateTriviaSet {
   difficulty?: string;
   question_count: number;
   question_data: TriviaQuestionData[];
-  status?: "draft" | "review" | "approved" | "archived";
+  status?: "draft" | "published" | "archived";
   visibility?: "Public" | "Unlisted" | "Private";
 }

@@ -70,7 +70,7 @@ export default function QuestionBank({
     setFilteredQuestions(filtered);
   };
 
-  const handleArchiveQuestion = async (questionId: string) => {
+  const handleArchiveQuestion = async (questionId: number) => {
     try {
       const response = await fetch(`/api/trivia-questions/${questionId}`, {
         method: "PUT",

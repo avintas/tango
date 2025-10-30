@@ -16,11 +16,6 @@ const navigation = [
     href: "/cms",
     icon: ComputerDesktopIcon,
   },
-  {
-    name: "Review & Publish",
-    href: "/cms/review",
-    icon: ArchiveBoxIcon,
-  },
 ];
 
 const libraryActions = [
