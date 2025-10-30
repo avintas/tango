@@ -70,6 +70,12 @@ const contentLibrariesActions = [
     initial: "⚖️",
   },
   {
+    id: 8,
+    name: "Multiple Choice Trivia",
+    href: "/cms/multiple-choice-trivia-library",
+    initial: "📋",
+  },
+  {
     id: 2,
     name: "Stats Library",
     href: "/cms/stats-library",

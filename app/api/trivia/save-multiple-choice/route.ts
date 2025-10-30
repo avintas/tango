@@ -128,19 +128,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save to database
+    // Save to dedicated multiple_choice_trivia table
     const { data, error } = await supabaseAdmin
-      .from("trivia_questions")
+      .from("multiple_choice_trivia")
       .insert(
         parsedQuestions.map((q) => ({
           question_text: q.question_text,
-          theme: q.theme,
-          tags: q.tags,
           correct_answer: q.correct_answer,
           wrong_answers: q.wrong_answers,
-          question_type: q.question_type,
+          explanation: null, // Can be added later via CMS
+          theme: q.theme || null,
+          tags: q.tags || null,
           status: "draft",
-          created_by: createdBy || null,
+          source_content_id: sourceContentId ? parseInt(sourceContentId) : null,
         })),
       )
       .select();
