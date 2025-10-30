@@ -9,7 +9,7 @@ interface PromptCardProps {
 
 export function PromptCard({ prompt, onUsePrompt }: PromptCardProps) {
   const Icon =
-    typeIcons[prompt.content_type as keyof typeof typeIcons] || typeIcons.stats;
+    typeIcons[prompt.content_type as keyof typeof typeIcons] || typeIcons.stat;
   const typeName =
     typeNames[prompt.content_type as keyof typeof typeNames] || "Unknown";
 
