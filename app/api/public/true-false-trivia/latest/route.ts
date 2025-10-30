@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
 
     const { data, error } = await supabase
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .select(
         "id, question_text, is_true, explanation, category, theme, difficulty, attribution",
       )

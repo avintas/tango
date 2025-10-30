@@ -3,7 +3,7 @@
 // =============================================================================
 //
 // Type definitions for Multiple Choice Trivia content type
-// Database table: multiple_choice_trivia
+// Database table: trivia_multiple_choice
 // Pattern: Content Library Table Pattern
 //
 // Created: October 30, 2025

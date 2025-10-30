@@ -11,7 +11,7 @@ export async function GET() {
   try {
     // Fetch all published motivational quotes
     const { data, error } = await supabase
-      .from("motivational")
+      .from("collection_motivational")
       .select("id, quote, context, theme, category, attribution")
       .eq("status", "published")
       .order("id", { ascending: true });

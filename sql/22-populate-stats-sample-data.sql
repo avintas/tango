@@ -1,7 +1,7 @@
 -- Sample hockey statistics for testing
--- Insert sample stats into the stats table
+-- Insert sample stats into the collection_stats table
 
-INSERT INTO public.stats (
+INSERT INTO public.collection_stats (
   stat_text,
   stat_value,
   stat_category,
@@ -195,5 +195,5 @@ SELECT
   COUNT(*) FILTER (WHERE status = 'published') as published,
   COUNT(*) FILTER (WHERE status = 'draft') as draft,
   COUNT(DISTINCT stat_category) as categories
-FROM stats;
+FROM collection_stats;
 

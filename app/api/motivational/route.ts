@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     let query = supabase
-      .from("motivational")
+      .from("collection_motivational")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false });
 
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = await supabase
-      .from("motivational")
+      .from("collection_motivational")
       .insert([
         {
           quote: body.quote,

@@ -1,8 +1,8 @@
--- Create dedicated stats table for hockey statistics
+-- Create dedicated collection_stats table for hockey statistics
 -- Replaces the mixed use of content table for statistical content
 -- Provides clean, purpose-built schema for statistics
 
-CREATE TABLE IF NOT EXISTS public.stats (
+CREATE TABLE IF NOT EXISTS public.collection_stats (
   -- Primary Key
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   
@@ -37,38 +37,38 @@ CREATE TABLE IF NOT EXISTS public.stats (
 );
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_stats_status 
-  ON public.stats(status);
+CREATE INDEX IF NOT EXISTS idx_collection_stats_status 
+  ON public.collection_stats(status);
 
-CREATE INDEX IF NOT EXISTS idx_stats_theme 
-  ON public.stats(theme);
+CREATE INDEX IF NOT EXISTS idx_collection_stats_theme 
+  ON public.collection_stats(theme);
 
-CREATE INDEX IF NOT EXISTS idx_stats_created_at 
-  ON public.stats(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_collection_stats_created_at 
+  ON public.collection_stats(created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_stats_published_at 
-  ON public.stats(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_collection_stats_published_at 
+  ON public.collection_stats(published_at DESC);
 
 -- Additional stats-specific indexes
-CREATE INDEX IF NOT EXISTS idx_stats_category 
-  ON public.stats(stat_category);
+CREATE INDEX IF NOT EXISTS idx_collection_stats_category 
+  ON public.collection_stats(stat_category);
 
-CREATE INDEX IF NOT EXISTS idx_stats_year 
-  ON public.stats(year DESC);
+CREATE INDEX IF NOT EXISTS idx_collection_stats_year 
+  ON public.collection_stats(year DESC);
 
 -- Add table and column comments
-COMMENT ON TABLE public.stats IS 'Dedicated table for hockey statistics';
-COMMENT ON COLUMN public.stats.stat_text IS 'The full statistical statement text';
-COMMENT ON COLUMN public.stats.stat_value IS 'The actual numeric value/stat (e.g., "894 goals")';
-COMMENT ON COLUMN public.stats.stat_category IS 'Type of statistic: player, team, league, historical';
-COMMENT ON COLUMN public.stats.year IS 'Year the stat is from (if applicable)';
-COMMENT ON COLUMN public.stats.theme IS 'Thematic classification (e.g., scoring, defense, records)';
-COMMENT ON COLUMN public.stats.category IS 'Secondary classification (e.g., NHL, playoffs, season, career)';
-COMMENT ON COLUMN public.stats.attribution IS 'Source attribution (e.g., NHL Official Stats, Hockey Reference)';
-COMMENT ON COLUMN public.stats.status IS 'Workflow status: draft, published, archived';
-COMMENT ON COLUMN public.stats.source_content_id IS 'Foreign key to source material if applicable';
-COMMENT ON COLUMN public.stats.used_in IS 'Array tracking where this stat has been deployed';
-COMMENT ON COLUMN public.stats.display_order IS 'Manual ordering for display purposes';
-COMMENT ON COLUMN public.stats.published_at IS 'Timestamp when first published';
-COMMENT ON COLUMN public.stats.archived_at IS 'Timestamp when archived';
+COMMENT ON TABLE public.collection_stats IS 'Dedicated table for hockey statistics';
+COMMENT ON COLUMN public.collection_stats.stat_text IS 'The full statistical statement text';
+COMMENT ON COLUMN public.collection_stats.stat_value IS 'The actual numeric value/stat (e.g., "894 goals")';
+COMMENT ON COLUMN public.collection_stats.stat_category IS 'Type of statistic: player, team, league, historical';
+COMMENT ON COLUMN public.collection_stats.year IS 'Year the stat is from (if applicable)';
+COMMENT ON COLUMN public.collection_stats.theme IS 'Thematic classification (e.g., scoring, defense, records)';
+COMMENT ON COLUMN public.collection_stats.category IS 'Secondary classification (e.g., NHL, playoffs, season, career)';
+COMMENT ON COLUMN public.collection_stats.attribution IS 'Source attribution (e.g., NHL Official Stats, Hockey Reference)';
+COMMENT ON COLUMN public.collection_stats.status IS 'Workflow status: draft, published, archived';
+COMMENT ON COLUMN public.collection_stats.source_content_id IS 'Foreign key to source material if applicable';
+COMMENT ON COLUMN public.collection_stats.used_in IS 'Array tracking where this stat has been deployed';
+COMMENT ON COLUMN public.collection_stats.display_order IS 'Manual ordering for display purposes';
+COMMENT ON COLUMN public.collection_stats.published_at IS 'Timestamp when first published';
+COMMENT ON COLUMN public.collection_stats.archived_at IS 'Timestamp when archived';
 

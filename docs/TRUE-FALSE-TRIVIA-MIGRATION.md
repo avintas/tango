@@ -2,7 +2,7 @@
 
 ## Overview
 
-Migrated true/false trivia questions from the unified `trivia_questions` table to a dedicated `true_false_trivia` table, following the established **Content Library Table Pattern**.
+Migrated true/false trivia questions from the unified `trivia_questions` table to a dedicated `trivia_true_false` table, following the established **Content Library Table Pattern**.
 
 ## What Changed
 
@@ -15,7 +15,7 @@ Migrated true/false trivia questions from the unified `trivia_questions` table t
 
 ### After (New System)
 
-- Dedicated `true_false_trivia` table with purpose-built schema
+- Dedicated `trivia_true_false` table with purpose-built schema
 - Clean structure focused on true/false question needs
 - Answer stored as BOOLEAN (`true` or `false`)
 - Dedicated APIs: `/api/true-false-trivia` (CMS) and `/api/public/true-false-trivia` (public)
@@ -24,7 +24,7 @@ Migrated true/false trivia questions from the unified `trivia_questions` table t
 
 ## Database Schema
 
-### Table: `true_false_trivia`
+### Table: `trivia_true_false`
 
 **Content-Specific Fields:**
 
@@ -82,7 +82,7 @@ Migrated true/false trivia questions from the unified `trivia_questions` table t
 
 ### 2. Generation Integration (Modified)
 
-- **`app/api/trivia/save-true-false/route.ts`** - ✅ Updated to save to `true_false_trivia` table
+- **`app/api/trivia/save-true-false/route.ts`** - ✅ Updated to save to `trivia_true_false` table
 
 ### 3. TypeScript Types
 
@@ -125,7 +125,7 @@ Migrated true/false trivia questions from the unified `trivia_questions` table t
 ### Running the Migration
 
 ```sql
--- 1. Create the true_false_trivia table
+-- 1. Create the trivia_true_false table
 \i sql/23-create-true-false-trivia-table.sql
 
 -- 2. Migrate data from trivia_questions table
@@ -253,7 +253,7 @@ The public API (`/api/public/true-false-trivia/*`) provides:
 ### Content Generation Integration
 
 - [ ] Generate new true/false questions via Gemini
-- [ ] Verify generated questions save to `true_false_trivia` table (not `trivia_questions`)
+- [ ] Verify generated questions save to `trivia_true_false` table (not `trivia_questions`)
 - [ ] Check that `is_true` field is boolean (not text)
 - [ ] Verify explanation field is properly stored
 - [ ] Confirm `source_content_id` is tracked
@@ -303,11 +303,11 @@ console.log(`Found ${count} easy questions`);
 
 **File:** `app/api/trivia/save-true-false/route.ts`
 
-When true/false questions are generated via Gemini AI, they now save directly to the new `true_false_trivia` table:
+When true/false questions are generated via Gemini AI, they now save directly to the new `trivia_true_false` table:
 
 **Changes Made:**
 
-- ✅ Changed insert target from `trivia_questions` to `true_false_trivia`
+- ✅ Changed insert target from `trivia_questions` to `trivia_true_false`
 - ✅ Updated field mapping: `is_true` (boolean) instead of `correct_answer` + `wrong_answers`
 - ✅ Added support for `explanation` field (now properly stored)
 - ✅ Added `source_content_id` tracking for provenance

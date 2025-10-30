@@ -76,6 +76,12 @@ const contentLibrariesActions = [
     initial: "📋",
   },
   {
+    id: 9,
+    name: "Who Am I Trivia",
+    href: "/cms/who-am-i-trivia-library",
+    initial: "🎭",
+  },
+  {
     id: 2,
     name: "Stats Library",
     href: "/cms/stats-library",

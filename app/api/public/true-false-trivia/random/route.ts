@@ -11,7 +11,7 @@ export async function GET() {
   try {
     // Fetch all published true/false trivia questions
     const { data, error } = await supabase
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .select(
         "id, question_text, is_true, explanation, category, theme, difficulty, attribution",
       )

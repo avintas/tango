@@ -131,19 +131,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save to database
+    // Save to database (new dedicated trivia_who_am_i table)
     const { data, error } = await supabaseAdmin
-      .from("trivia_questions")
+      .from("trivia_who_am_i")
       .insert(
         parsedQuestions.map((q) => ({
           question_text: q.question_text,
+          correct_answer: q.correct_answer,
           theme: q.theme,
           tags: q.tags,
-          correct_answer: q.correct_answer,
-          wrong_answers: q.wrong_answers,
-          question_type: q.question_type,
           status: "draft",
-          created_by: createdBy || null,
+          source_content_id: sourceContentId ? parseInt(sourceContentId) : null,
         })),
       )
       .select();

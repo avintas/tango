@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
 
     const { data, error } = await supabase
-      .from("stats")
+      .from("collection_stats")
       .select(
         "id, stat_text, stat_value, stat_category, year, theme, category, attribution",
       )

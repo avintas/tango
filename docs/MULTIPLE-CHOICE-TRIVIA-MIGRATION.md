@@ -2,7 +2,7 @@
 
 ## Overview
 
-Migrated multiple-choice trivia questions from the unified `trivia_questions` table to a dedicated `multiple_choice_trivia` table, following the established **Content Library Table Pattern**.
+Migrated multiple-choice trivia questions from the unified `trivia_questions` table to a dedicated `trivia_multiple_choice` table, following the established **Content Library Table Pattern**.
 
 ## What Changed
 
@@ -15,7 +15,7 @@ Migrated multiple-choice trivia questions from the unified `trivia_questions` ta
 
 ### After (New System)
 
-- Dedicated `multiple_choice_trivia` table with purpose-built schema
+- Dedicated `trivia_multiple_choice` table with purpose-built schema
 - Clean structure focused on multiple-choice question needs
 - Answer stored as TEXT with TEXT array of exactly 3 wrong answers
 - Dedicated APIs: `/api/multiple-choice-trivia` (CMS) and `/api/public/multiple-choice-trivia` (public)
@@ -24,7 +24,7 @@ Migrated multiple-choice trivia questions from the unified `trivia_questions` ta
 
 ## Database Schema
 
-### Table: `multiple_choice_trivia`
+### Table: `trivia_multiple_choice`
 
 **Content-Specific Fields:**
 
@@ -83,7 +83,7 @@ Migrated multiple-choice trivia questions from the unified `trivia_questions` ta
 
 ### 2. Generation Integration (Modified)
 
-- **`app/api/trivia/save-multiple-choice/route.ts`** - ✅ Updated to save to `multiple_choice_trivia` table
+- **`app/api/trivia/save-multiple-choice/route.ts`** - ✅ Updated to save to `trivia_multiple_choice` table
 
 ### 3. TypeScript Types
 
@@ -247,7 +247,7 @@ The public API (`/api/public/multiple-choice-trivia/*`) provides:
 ### Content Generation Integration
 
 - [ ] Generate new multiple-choice questions via Gemini
-- [ ] Verify generated questions save to `multiple_choice_trivia` table (not `trivia_questions`)
+- [ ] Verify generated questions save to `trivia_multiple_choice` table (not `trivia_questions`)
 - [ ] Check that `wrong_answers` field contains exactly 3 items
 - [ ] Verify explanation field is properly stored
 - [ ] Confirm `source_content_id` is tracked
@@ -299,11 +299,11 @@ console.log(`Found ${count} easy questions`);
 
 **File:** `app/api/trivia/save-multiple-choice/route.ts`
 
-When multiple-choice questions are generated via Gemini AI, they now save directly to the new `multiple_choice_trivia` table:
+When multiple-choice questions are generated via Gemini AI, they now save directly to the new `trivia_multiple_choice` table:
 
 **Changes Made:**
 
-- ✅ Changed insert target from `trivia_questions` to `multiple_choice_trivia`
+- ✅ Changed insert target from `trivia_questions` to `trivia_multiple_choice`
 - ✅ Updated field mapping: correct structure for `correct_answer` and `wrong_answers[]`
 - ✅ Added support for `explanation` field (now properly stored)
 - ✅ Added `source_content_id` tracking for provenance

@@ -1,7 +1,7 @@
--- Migrate greetings data from content table to dedicated greetings table
+-- Migrate greetings data from content table to dedicated collection_greetings table
 -- Moves all greeting content (content_type = 'greeting') to the new table
 
-INSERT INTO public.greetings (
+INSERT INTO public.collection_greetings (
   greeting_text,
   attribution,
   status,
@@ -52,5 +52,5 @@ SELECT
   COUNT(CASE WHEN status = 'published' THEN 1 END) as published_count,
   COUNT(CASE WHEN status = 'archived' THEN 1 END) as archived_count,
   COUNT(CASE WHEN status IS NULL OR status NOT IN ('published', 'archived') THEN 1 END) as other_count
-FROM public.greetings;
+FROM public.collection_greetings;
 

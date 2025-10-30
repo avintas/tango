@@ -11,7 +11,7 @@ export async function GET() {
   try {
     // Fetch all published stats
     const { data, error } = await supabase
-      .from("stats")
+      .from("collection_stats")
       .select(
         "id, stat_text, stat_value, stat_category, year, theme, category, attribution",
       )

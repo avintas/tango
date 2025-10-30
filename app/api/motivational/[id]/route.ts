@@ -15,7 +15,7 @@ export async function GET(
     const id = parseInt(params.id, 10);
 
     const { data, error } = await supabase
-      .from("motivational")
+      .from("collection_motivational")
       .select("*")
       .eq("id", id)
       .single();
@@ -73,7 +73,7 @@ export async function PUT(
       updateData.archived_at = body.archived_at;
 
     const { data, error } = await supabase
-      .from("motivational")
+      .from("collection_motivational")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -125,7 +125,7 @@ export async function PATCH(
     }
 
     const { data, error } = await supabase
-      .from("motivational")
+      .from("collection_motivational")
       .update(updateData)
       .eq("id", id)
       .select()

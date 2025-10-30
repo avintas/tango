@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
 
     const { data, error } = await supabase
-      .from("motivational")
+      .from("collection_motivational")
       .select("id, quote, context, theme, category, attribution")
       .eq("status", "published")
       .order("published_at", { ascending: false, nullsFirst: false })

@@ -28,7 +28,7 @@ export async function GET() {
   try {
     // Get count of published questions
     const { count } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .select("*", { count: "exact", head: true })
       .eq("status", "published");
 
@@ -47,7 +47,7 @@ export async function GET() {
 
     // Fetch random question
     const { data, error } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .select(
         "id, question_text, correct_answer, wrong_answers, explanation, category, theme, difficulty, attribution",
       )

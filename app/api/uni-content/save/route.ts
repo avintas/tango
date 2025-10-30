@@ -63,7 +63,7 @@ export async function POST(req: Request) {
 
       case "greetings":
       case "greeting": // Handle both singular and plural
-        tableName = "greetings";
+        tableName = "collection_greetings";
         recordsToInsert = itemsToSave.map((item) => ({
           greeting_text: item.content_text,
           attribution: item.attribution || null,

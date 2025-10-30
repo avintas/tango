@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     // Build query
     let query = supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     // Insert into database
     const { data, error } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .insert([record])
       .select()
       .single();

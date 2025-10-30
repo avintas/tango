@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
 
     let query = supabase
-      .from("greetings")
+      .from("collection_greetings")
       .select("id, greeting_text, attribution", { count: "exact" })
       .eq("status", "published")
       .order("published_at", { ascending: false, nullsFirst: false })

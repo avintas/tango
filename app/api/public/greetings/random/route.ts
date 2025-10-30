@@ -11,7 +11,7 @@ export async function GET() {
   try {
     // Fetch all published greetings
     const { data, error } = await supabase
-      .from("greetings")
+      .from("collection_greetings")
       .select("id, greeting_text, attribution")
       .eq("status", "published")
       .order("id", { ascending: true });

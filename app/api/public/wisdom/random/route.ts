@@ -11,7 +11,7 @@ export async function GET() {
   try {
     // Fetch all published wisdom entries
     const { data, error } = await supabase
-      .from("wisdom")
+      .from("collection_wisdom")
       .select("id, title, musing, from_the_box, theme, category, attribution")
       .eq("status", "published")
       .order("id", { ascending: true });

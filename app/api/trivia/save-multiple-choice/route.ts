@@ -128,9 +128,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save to dedicated multiple_choice_trivia table
+    // Save to dedicated trivia_multiple_choice table
     const { data, error } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .insert(
         parsedQuestions.map((q) => ({
           question_text: q.question_text,

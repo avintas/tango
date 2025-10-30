@@ -41,7 +41,7 @@ LIMIT 5;
 -- MIGRATION
 -- =============================================================================
 
-INSERT INTO public.multiple_choice_trivia (
+INSERT INTO public.trivia_multiple_choice (
   question_text,
   correct_answer,
   wrong_answers,
@@ -100,14 +100,14 @@ WHERE tq.question_type = 'multiple-choice';
 
 -- Count migrated records
 SELECT COUNT(*) as migrated_count
-FROM public.multiple_choice_trivia;
+FROM public.trivia_multiple_choice;
 
 -- Verify no data loss (counts should match)
 SELECT 
   (SELECT COUNT(*) FROM public.trivia_questions WHERE question_type = 'multiple-choice') as source_count,
-  (SELECT COUNT(*) FROM public.multiple_choice_trivia) as destination_count,
+  (SELECT COUNT(*) FROM public.trivia_multiple_choice) as destination_count,
   (SELECT COUNT(*) FROM public.trivia_questions WHERE question_type = 'multiple-choice') - 
-  (SELECT COUNT(*) FROM public.multiple_choice_trivia) as difference;
+  (SELECT COUNT(*) FROM public.trivia_multiple_choice) as difference;
 
 -- Sample comparison: Source vs Destination
 (
@@ -135,7 +135,7 @@ UNION ALL
     array_length(wrong_answers, 1) as wrong_answer_count,
     theme,
     status
-  FROM public.multiple_choice_trivia
+  FROM public.trivia_multiple_choice
   LIMIT 3
 )
 ORDER BY table_type, id;
@@ -145,14 +145,14 @@ SELECT
   id,
   question_text,
   array_length(wrong_answers, 1) as wrong_answer_count
-FROM public.multiple_choice_trivia
+FROM public.trivia_multiple_choice
 WHERE array_length(wrong_answers, 1) != 3;
 
 -- Status distribution
 SELECT 
   status,
   COUNT(*) as count
-FROM public.multiple_choice_trivia
+FROM public.trivia_multiple_choice
 GROUP BY status
 ORDER BY count DESC;
 
@@ -160,7 +160,7 @@ ORDER BY count DESC;
 SELECT 
   theme,
   COUNT(*) as count
-FROM public.multiple_choice_trivia
+FROM public.trivia_multiple_choice
 GROUP BY theme
 ORDER BY count DESC
 LIMIT 10;

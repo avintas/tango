@@ -15,7 +15,7 @@ export async function GET(
   try {
     const id = parseInt(params.id, 10);
     const { data, error } = await supabase
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .select("*")
       .eq("id", id)
       .single();
@@ -51,7 +51,7 @@ export async function PUT(
     const body: TrueFalseTriviaUpdateInput = await request.json();
 
     const { data, error } = await supabase
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .update({ ...body, updated_at: new Date().toISOString() })
       .eq("id", id)
       .select()
@@ -99,7 +99,7 @@ export async function PATCH(
     }
 
     const { data, error } = await supabase
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -135,7 +135,7 @@ export async function DELETE(
     const id = parseInt(params.id, 10);
 
     const { error } = await supabase
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .delete()
       .eq("id", id);
 

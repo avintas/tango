@@ -1,6 +1,6 @@
--- Migrate statistics from content table to dedicated stats table
+-- Migrate statistics from content table to dedicated collection_stats table
 -- This script identifies content entries with content_type = 'statistic'
--- and migrates them to the new stats table
+-- and migrates them to the new collection_stats table
 
 -- Preview what will be migrated (run this first to check)
 -- SELECT 
@@ -16,7 +16,7 @@
 -- LIMIT 10;
 
 -- Perform the migration
-INSERT INTO public.stats (
+INSERT INTO public.collection_stats (
   stat_text,
   stat_value,
   stat_category,
@@ -56,6 +56,6 @@ SELECT
   COUNT(*) as migrated_count,
   status,
   COUNT(*) FILTER (WHERE source_content_id IS NOT NULL) as from_content_table
-FROM stats
+FROM collection_stats
 GROUP BY status;
 

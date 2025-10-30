@@ -42,7 +42,7 @@ export async function GET(
     }
 
     const { data, error } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .select("*")
       .eq("id", id)
       .single();
@@ -133,7 +133,7 @@ export async function PUT(
     }
 
     const { data, error } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .update(updates)
       .eq("id", id)
       .select()
@@ -204,7 +204,7 @@ export async function PATCH(
       if (body.status === "published") {
         // Only set published_at if not already set
         const existing = await supabaseAdmin
-          .from("multiple_choice_trivia")
+          .from("trivia_multiple_choice")
           .select("published_at")
           .eq("id", id)
           .single();
@@ -218,7 +218,7 @@ export async function PATCH(
     }
 
     const { data, error } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .update(updates)
       .eq("id", id)
       .select()
@@ -274,7 +274,7 @@ export async function DELETE(
     }
 
     const { error } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .delete()
       .eq("id", id);
 

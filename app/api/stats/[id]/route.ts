@@ -41,7 +41,7 @@ export async function PUT(
       updateData.archived_at = body.archived_at;
 
     const { data, error } = await supabase
-      .from("stats")
+      .from("collection_stats")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -93,7 +93,7 @@ export async function PATCH(
     }
 
     const { data, error } = await supabase
-      .from("stats")
+      .from("collection_stats")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -128,7 +128,10 @@ export async function DELETE(
   try {
     const id = parseInt(params.id, 10);
 
-    const { error } = await supabase.from("stats").delete().eq("id", id);
+    const { error } = await supabase
+      .from("collection_stats")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting stat:", error);

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Migrated greetings content from the unified `content` table to a dedicated `greetings` table, following the established pattern from the Wisdom Table migration.
+Migrated greetings content from the unified `content` table to a dedicated `collection_greetings` table, following the established pattern from the Wisdom Table migration.
 
 ## What Changed
 
@@ -15,14 +15,14 @@ Migrated greetings content from the unified `content` table to a dedicated `gree
 
 ### After (New System)
 
-- Dedicated `greetings` table with purpose-built schema
+- Dedicated `collection_greetings` table with purpose-built schema
 - Clean, simple structure focused on what greetings actually need
 - Only 11 fields (compared to wisdom's similar structure)
 - API: `/api/greetings`
 
 ## Database Schema
 
-### Table: `greetings`
+### Table: `collection_greetings`
 
 **Content-Specific Fields:**
 
@@ -43,9 +43,9 @@ Migrated greetings content from the unified `content` table to a dedicated `gree
 
 **Indexes:**
 
-- `idx_greetings_status` - Status filtering
-- `idx_greetings_created_at` - Recent items
-- `idx_greetings_published_at` - Published items
+- `idx_collection_greetings_status` - Status filtering
+- `idx_collection_greetings_created_at` - Recent items
+- `idx_collection_greetings_published_at` - Published items
 
 ### Key Design Decisions
 

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     let query = supabase
-      .from("wisdom")
+      .from("collection_wisdom")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false });
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = await supabase
-      .from("wisdom")
+      .from("collection_wisdom")
       .insert([
         {
           title: body.title,

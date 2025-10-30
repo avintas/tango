@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     let query = supabase
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false });
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = await supabase
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .insert([body])
       .select()
       .single();

@@ -1,5 +1,5 @@
 // Main interface representing a single True/False trivia question
-// Aligns with the 'true_false_trivia' table schema
+// Aligns with the 'trivia_true_false' table schema
 export interface TrueFalseTrivia {
   id: number;
   question_text: string;

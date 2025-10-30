@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
 
     let query = supabase
-      .from("motivational")
+      .from("collection_motivational")
       .select("id, quote, context, theme, category, attribution", {
         count: "exact",
       })

@@ -40,7 +40,7 @@ export async function PUT(
       updateData.archived_at = body.archived_at;
 
     const { data, error } = await supabase
-      .from("wisdom")
+      .from("collection_wisdom")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -92,7 +92,7 @@ export async function PATCH(
     }
 
     const { data, error } = await supabase
-      .from("wisdom")
+      .from("collection_wisdom")
       .update(updateData)
       .eq("id", id)
       .select()

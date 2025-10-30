@@ -36,7 +36,7 @@ export async function PUT(
       updateData.archived_at = body.archived_at;
 
     const { data, error } = await supabase
-      .from("greetings")
+      .from("collection_greetings")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -88,7 +88,7 @@ export async function PATCH(
     }
 
     const { data, error } = await supabase
-      .from("greetings")
+      .from("collection_greetings")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -123,7 +123,10 @@ export async function DELETE(
   try {
     const id = parseInt(params.id, 10);
 
-    const { error } = await supabase.from("greetings").delete().eq("id", id);
+    const { error } = await supabase
+      .from("collection_greetings")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting greeting:", error);

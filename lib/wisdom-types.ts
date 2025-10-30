@@ -1,4 +1,4 @@
-// TypeScript types for the wisdom table
+// TypeScript types for the collection_wisdom table
 
 export interface Wisdom {
   id: number;

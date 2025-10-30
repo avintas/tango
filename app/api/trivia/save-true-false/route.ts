@@ -208,9 +208,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save to the new dedicated true_false_trivia table
+    // Save to the new dedicated trivia_true_false table
     const { data, error } = await supabaseAdmin
-      .from("true_false_trivia")
+      .from("trivia_true_false")
       .insert(
         parsedQuestions.map((q) => ({
           question_text: q.question_text,

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     // Build query - only published items
     let query = supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .select(
         "id, question_text, correct_answer, wrong_answers, explanation, category, theme, difficulty, attribution",
         { count: "exact" },

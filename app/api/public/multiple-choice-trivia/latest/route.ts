@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch latest published questions
     const { data, error, count } = await supabaseAdmin
-      .from("multiple_choice_trivia")
+      .from("trivia_multiple_choice")
       .select(
         "id, question_text, correct_answer, wrong_answers, explanation, category, theme, difficulty, attribution",
         { count: "exact" },
