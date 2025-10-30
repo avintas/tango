@@ -6,7 +6,7 @@ function formatContentForDisplay(data: TriviaQuestion[]): string {
   if (!data || data.length === 0) return "No questions generated.";
   return data
     .map((q, index) => {
-      return `**Question ${index + 1}:** ${q.question_text}\n\n**Answer:** ${q.correct_answer}\n\n**Explanation:** ${q.explanation}`;
+      return `**Question ${index + 1}:** ${q.question}\n\n**Answer:** ${q.correct_answer}\n\n**Explanation:** ${q.explanation}`;
     })
     .join("\n\n---\n\n");
 }

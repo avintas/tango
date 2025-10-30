@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const recordsToInsert = itemsToSave.map((item) => ({
       question_type: item.question_type,
-      question_text: item.question_text,
+      question_text: item.question, // Map from 'question' to 'question_text' for database
       correct_answer: item.correct_answer,
       wrong_answers: item.wrong_answers,
       explanation: item.explanation,

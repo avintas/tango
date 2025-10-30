@@ -64,6 +64,12 @@ const contentLibrariesActions = [
     initial: "🗄️",
   },
   {
+    id: 7,
+    name: "True/False Trivia",
+    href: "/cms/true-false-trivia-library",
+    initial: "⚖️",
+  },
+  {
     id: 2,
     name: "Stats Library",
     href: "/cms/stats-library",

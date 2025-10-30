@@ -208,20 +208,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save to database
+    // Save to the new dedicated true_false_trivia table
     const { data, error } = await supabaseAdmin
-      .from("trivia_questions")
+      .from("true_false_trivia")
       .insert(
         parsedQuestions.map((q) => ({
           question_text: q.question_text,
+          is_true: q.correct_answer.toLowerCase() === "true",
+          explanation: q.explanation || null,
           theme: q.theme,
           tags: q.tags,
-          correct_answer: q.correct_answer,
-          wrong_answers: q.wrong_answers,
-          question_type: q.question_type,
           status: "draft",
-          created_by: createdBy || null,
-          // Note: explanation/correction field would need to be added to trivia_questions table
+          source_content_id: sourceContentId ? parseInt(sourceContentId) : null,
         })),
       )
       .select();

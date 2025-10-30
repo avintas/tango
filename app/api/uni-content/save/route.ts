@@ -24,23 +24,87 @@ export async function POST(req: Request) {
       );
     }
 
-    const recordsToInsert = itemsToSave.map((item) => ({
-      content_type: item.content_type,
-      content_text: item.content_text,
-      theme: item.theme || null,
-      attribution: item.attribution || null,
-      category: item.category || null,
-      source_content_id: sourceContentId ? Number(sourceContentId) : null,
-      // created_by is not in the schema, but is kept for potential future use
-    }));
+    // Determine content type from first item
+    const contentType = itemsToSave[0].content_type;
 
+    // Route to the appropriate dedicated table based on content type
+    let tableName: string;
+    let recordsToInsert: any[];
+
+    switch (contentType) {
+      case "statistics":
+      case "statistic": // Handle both singular and plural
+        tableName = "stats";
+        recordsToInsert = itemsToSave.map((item) => ({
+          stat_text: item.content_text,
+          stat_value: item.stat_value || null,
+          stat_category: item.stat_category || null,
+          year: item.year || null,
+          theme: item.theme || null,
+          category: item.category || null,
+          attribution: item.attribution || null,
+          status: "draft",
+          source_content_id: sourceContentId ? Number(sourceContentId) : null,
+        }));
+        break;
+
+      case "motivational":
+        tableName = "motivational";
+        recordsToInsert = itemsToSave.map((item) => ({
+          quote: item.content_text,
+          context: item.context || null,
+          theme: item.theme || null,
+          category: item.category || null,
+          attribution: item.attribution || null,
+          status: "draft",
+          source_content_id: sourceContentId ? Number(sourceContentId) : null,
+        }));
+        break;
+
+      case "greetings":
+      case "greeting": // Handle both singular and plural
+        tableName = "greetings";
+        recordsToInsert = itemsToSave.map((item) => ({
+          greeting_text: item.content_text,
+          attribution: item.attribution || null,
+          status: "draft",
+          source_content_id: sourceContentId ? Number(sourceContentId) : null,
+        }));
+        break;
+
+      case "penalty-box-philosopher":
+      case "wisdom":
+        tableName = "wisdom";
+        recordsToInsert = itemsToSave.map((item) => ({
+          title: item.content_title || "Untitled",
+          musing: item.musings || item.content_text,
+          from_the_box: item.from_the_box || "",
+          theme: item.theme || null,
+          category: item.category || null,
+          attribution: item.attribution || "Penalty Box Philosopher",
+          status: "draft",
+          source_content_id: sourceContentId ? Number(sourceContentId) : null,
+        }));
+        break;
+
+      default:
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Unsupported content type: ${contentType}. Expected: statistics, motivational, greetings, wisdom, or penalty-box-philosopher`,
+          },
+          { status: 400 },
+        );
+    }
+
+    // Insert into the appropriate dedicated table
     const { data, error, count } = await supabaseAdmin
-      .from("content")
+      .from(tableName)
       .insert(recordsToInsert)
       .select();
 
     if (error) {
-      console.error("Supabase error:", error);
+      console.error(`Supabase error (${tableName} table):`, error);
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 },
@@ -48,22 +112,18 @@ export async function POST(req: Request) {
     }
 
     // After successful insertion, track usage if sourceContentId is provided
-    // This assumes all items came from the same source.
     if (sourceContentId && itemsToSave.length > 0) {
-      // The content_type is the same for all items in a single batch.
-      const dbContentType = itemsToSave[0].content_type;
-
       const { error: rpcError } = await supabaseAdmin.rpc(
         "append_to_used_for",
         {
           target_id: Number(sourceContentId),
-          usage_type: dbContentType,
+          usage_type: contentType,
         },
       );
 
       if (rpcError) {
         console.warn(
-          `Content saved (Count: ${count}), but failed to track usage for source ID ${sourceContentId}:`,
+          `Content saved to ${tableName} (Count: ${count}), but failed to track usage for source ID ${sourceContentId}:`,
           rpcError.message,
         );
         // Do not block success response if only tracking fails
@@ -74,6 +134,7 @@ export async function POST(req: Request) {
       success: true,
       data,
       count,
+      table: tableName, // Include which table was used for transparency
     });
   } catch (error) {
     console.error("API Error:", error);

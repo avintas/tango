@@ -1,6 +1,11 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { NextRequest, NextResponse } from "next/server";
-import { UniContent } from "@/lib/content-types";
+import {
+  UniContent,
+  UpdateContentRequest,
+  UpdateContentResponse,
+  DeleteContentResponse,
+} from "@/lib/content-types";
 
 /**
  * PUT /api/uni-content/[id]

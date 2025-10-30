@@ -260,6 +260,32 @@ export interface ContentStats {
   };
 }
 
+export interface TriviaQuestion {
+  id?: number;
+  question: string;
+  question_type: "multiple-choice" | "true-false" | "who-am-i";
+  correct_answer: string;
+  wrong_answers: string[];
+  explanation?: string | null;
+  theme?: string | null;
+  category?: string | null;
+  difficulty?: string | null;
+  source_content_id?: number | null;
+  status?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  emoji?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TriviaSet {
   // ... fields for TriviaSet
 }
