@@ -4,7 +4,9 @@ if (!process.env.GEMINI_API_KEY) {
   console.warn("GEMINI_API_KEY is not set. Gemini API will not be available.");
 }
 
-export const gemini = new GoogleGenAI(process.env.GEMINI_API_KEY || "");
+export const gemini = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY || "",
+});
 
 /**
  * Format instructions for different trivia question types
@@ -109,7 +111,7 @@ ${formatInstructions}`;
 
     return {
       success: true,
-      content: text.trim(),
+      content: text ? text.trim() : "",
       processingTime: performance.now() - startTime,
     };
   } catch (error) {
@@ -146,7 +148,7 @@ export async function testGeminiConnection(): Promise<{
     });
     const text = response.text;
 
-    if (text.toLowerCase().includes("working")) {
+    if (text && text.toLowerCase().includes("working")) {
       return { success: true };
     } else {
       return { success: false, error: "Unexpected response from Gemini API" };
