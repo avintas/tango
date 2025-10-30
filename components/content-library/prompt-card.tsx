@@ -22,7 +22,7 @@ export function PromptCard({ prompt, onUsePrompt }: PromptCardProps) {
               <Icon className="h-6 w-6 text-gray-500" />
             </div>
             <h3 className="text-base font-semibold text-gray-900 line-clamp-1">
-              {prompt.prompt_name || `Prompt #${prompt.id}`}
+              {`Prompt #${prompt.id}`}
             </h3>
           </div>
           <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
