@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Switch } from "@/components/switch";
 import { Alert } from "@/components/alert";
-import type { Category } from "@/lib/content-types";
+import type { Category } from "@/lib/supabase";
 
 export default function CategoriesDashboardPage() {
   const [categories, setCategories] = useState<Category[]>([]);

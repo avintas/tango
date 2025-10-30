@@ -1,5 +1,5 @@
 import { gemini } from "@/lib/gemini";
-import { TriviaQuestion } from "./content-types";
+import { TriviaQuestion } from "./types";
 import { extractJsonObject } from "./content-helpers";
 
 export interface WhoAmIGenerationRequest {

@@ -1,31 +1,52 @@
 import { NextResponse } from "next/server";
-import { generateMotivationalContent } from "@/lib/gemini-motivational";
+import { generateWisdomContent } from "@/lib/gemini-wisdom";
 import { UniContent } from "@/lib/types";
 
 /**
- * Formats structured UniContent data for display.
+ * Formats structured wisdom content into a readable string for UI display.
  * @param data An array of UniContent objects.
- * @returns A formatted string.
+ * @returns A single string with items separated by '---'.
  */
 function formatContentForDisplay(data: UniContent[]): string {
   if (!data || data.length === 0) {
     return "No content generated.";
   }
 
-  // Combine the different fields into a readable block for each item.
   return data
     .map((item) => {
-      let block = `**Quote:** ${item.content_text}`;
-      if (item.attribution) {
-        block += `\n**Attribution:** ${item.attribution}`;
+      let block = "";
+
+      // Title
+      if (item.content_title) {
+        block += `**Title:** ${item.content_title}\n\n`;
       }
+
+      // Musings
+      if (item.musings) {
+        block += `**Musings:** ${item.musings}\n\n`;
+      }
+
+      // From the Box
+      if (item.from_the_box) {
+        block += `**From the Box:** ${item.from_the_box}\n\n`;
+      }
+
+      // Fallback to content_text if no specific fields
+      if (!item.musings && !item.from_the_box && item.content_text) {
+        block += `${item.content_text}\n\n`;
+      }
+
+      // Theme
       if (item.theme) {
-        block += `\n**Theme:** ${item.theme}`;
+        block += `**Theme:** ${item.theme}\n\n`;
       }
-      if (item.category) {
-        block += `\n**Category:** ${item.category}`;
+
+      // Attribution
+      if (item.attribution) {
+        block += `**Attribution:** ${item.attribution}`;
       }
-      return block;
+
+      return block.trim();
     })
     .join("\n\n---\n\n");
 }
@@ -41,7 +62,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await generateMotivationalContent({
+    const result = await generateWisdomContent({
       sourceContent,
       customPrompt,
     });

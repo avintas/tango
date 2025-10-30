@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateGreetingsContent } from "@/lib/gemini-greetings";
-import { UniContent } from "@/lib/content-types";
+import { UniContent } from "@/lib/types";
 
 /**
  * Formats the structured UniContent data into a human-readable string for display.

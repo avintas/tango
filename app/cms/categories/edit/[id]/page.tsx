@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import CategoryForm from "@/components/category-form";
-import type { Category } from "@/lib/content-types";
+import type { Category } from "@/lib/supabase";
 
 export default function EditCategoryPage({
   params,

@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface SystemStatus {
   apiConfigured: boolean;
-  apiStatus: 'configured' | 'not-configured' | 'testing' | 'error';
+  apiStatus: "configured" | "not-configured" | "testing" | "error";
   sourceItemsCount: number;
   triviaSetsCount: number;
   loading: boolean;
@@ -15,7 +15,7 @@ interface SystemStatus {
 export function useSystemStatus() {
   const [status, setStatus] = useState<SystemStatus>({
     apiConfigured: false,
-    apiStatus: 'testing',
+    apiStatus: "testing",
     sourceItemsCount: 0,
     triviaSetsCount: 0,
     loading: true,
@@ -28,47 +28,52 @@ export function useSystemStatus() {
         // Test Gemini API configuration
         let apiConfigured = false;
         try {
-          const response = await fetch('/api/gemini/test', {
-            method: 'POST',
+          const response = await fetch("/api/gemini/test", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
           });
           const result = await response.json();
           apiConfigured = result.success;
         } catch (apiError) {
-          console.log('Gemini API test failed:', apiError);
+          console.log("Gemini API test failed:", apiError);
           apiConfigured = false;
         }
 
-        // Get source items count
+        // Get source items count from ingested table
         const { count: sourceCount, error: sourceError } = await supabase
-          .from('source_content')
-          .select('*', { count: 'exact', head: true })
-          .eq('metadata->>type', 'source_material');
+          .from("ingested")
+          .select("*", { count: "exact", head: true });
 
         if (sourceError) {
           throw new Error(`Source count error: ${sourceError.message}`);
         }
 
-        // Get trivia sets count (for now, we'll use a placeholder until we create trivia_questions table)
-        // TODO: Replace with real trivia questions count when table is created
-        const triviaSetsCount = 0;
+        // Get trivia questions count
+        const { count: triviaCount, error: triviaError } = await supabase
+          .from("trivia_questions")
+          .select("*", { count: "exact", head: true });
+
+        if (triviaError) {
+          console.log("Trivia count error:", triviaError);
+          // Don't throw - just use 0 if there's an error
+        }
 
         setStatus({
           apiConfigured,
-          apiStatus: apiConfigured ? 'configured' : 'not-configured',
+          apiStatus: apiConfigured ? "configured" : "not-configured",
           sourceItemsCount: sourceCount || 0,
-          triviaSetsCount,
+          triviaSetsCount: triviaCount || 0,
           loading: false,
           error: null,
         });
       } catch (error) {
-        setStatus(prev => ({
+        setStatus((prev) => ({
           ...prev,
-          apiStatus: 'error',
+          apiStatus: "error",
           loading: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         }));
       }
     };

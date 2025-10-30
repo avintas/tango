@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateWhoAmI } from "@/lib/gemini-who-am-i";
-import { TriviaQuestion } from "@/lib/content-types";
+import { TriviaQuestion } from "@/lib/types";
 
 function formatContentForDisplay(data: TriviaQuestion[]): string {
   if (!data || data.length === 0) return "No questions generated.";

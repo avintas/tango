@@ -6,11 +6,11 @@ import ContentTypeSelector, {
   ContentType,
 } from "@/components/content-type-selector";
 import { useAuth } from "@/lib/auth-context";
-import { UniContent, TriviaQuestion } from "@/lib/content-types";
+import { UniContent, TriviaQuestion } from "@/lib/types";
 
 interface GenerationJob {
   id: string;
-  status: "pending" | "processing" | "completed" | "failed";
+  status: "pending" | "in_progress" | "processing" | "completed" | "failed";
   message: string;
   createdAt: string;
   updatedAt: string;
@@ -45,9 +45,9 @@ export default function MainGeneratorPage() {
     "multiple-choice",
     "true-false",
     "who-am-i",
-    "stats",
+    "stat",
     "motivational",
-    "greetings",
+    "greeting",
     "penalty-box-philosopher",
   ];
 
@@ -235,11 +235,11 @@ export default function MainGeneratorPage() {
       "multiple-choice": "/api/gemini/generate-multiple-choice",
       "true-false": "/api/gemini/generate-true-false",
       "who-am-i": "/api/gemini/generate-who-am-i",
-      stats: "/api/gemini/generate-stats",
+      stat: "/api/gemini/generate-stats",
       motivational: "/api/gemini/generate-motivational",
-      greetings: "/api/gemini/generate-greetings",
+      greeting: "/api/gemini/generate-greetings",
       "penalty-box-philosopher": "/api/gemini/generate-penalty-box-philosopher",
-      // Note: 'wisdom' is a valid ContentType but is not handled by this generator
+      wisdom: "", // Valid ContentType but not handled by this generator
     };
     // The Record type will enforce that all keys are valid ContentTypes.
     // We add a check here to be safe, but it's mainly for documentation.
@@ -264,9 +264,9 @@ export default function MainGeneratorPage() {
       "who-am-i",
     ];
     const uniContentTypes: ContentType[] = [
-      "stats",
+      "stat",
       "motivational",
-      "greetings",
+      "greeting",
       "penalty-box-philosopher",
       "wisdom",
     ];
@@ -457,9 +457,9 @@ export default function MainGeneratorPage() {
                     "🎯 Multiple Choice"}
                   {selectedContentType === "true-false" && "⚖️ True/False"}
                   {selectedContentType === "who-am-i" && "🎭 Who Am I"}
-                  {selectedContentType === "stats" && "📊 Stats"}
+                  {selectedContentType === "stat" && "📊 Stats"}
                   {selectedContentType === "motivational" && "💪 Motivational"}
-                  {selectedContentType === "greetings" && "👋 Greetings"}
+                  {selectedContentType === "greeting" && "👋 Greetings"}
                   {selectedContentType === "penalty-box-philosopher" &&
                     "🧘 Penalty Box Philosopher"}
                 </span>

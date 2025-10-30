@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { NextRequest, NextResponse } from "next/server";
-import { TriviaQuestion } from "@/lib/content-types";
+import { TriviaQuestion } from "@/lib/types";
 
 interface SaveTriviaRequest {
   itemsToSave: TriviaQuestion[];

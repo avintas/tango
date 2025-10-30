@@ -11,16 +11,10 @@ import {
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { AcademicCapIcon } from "@heroicons/react/24/solid";
+import { ContentType } from "@/lib/types";
 
-export type ContentType =
-  | "multiple-choice"
-  | "true-false"
-  | "who-am-i"
-  | "stats"
-  | "wisdom"
-  | "motivational"
-  | "greetings"
-  | "penalty-box-philosopher";
+// Re-export for components that still import from here
+export type { ContentType };
 
 interface ContentTypeSelectorProps {
   selectedType: ContentType | null;
@@ -28,25 +22,25 @@ interface ContentTypeSelectorProps {
   allowedTypes?: ContentType[];
 }
 
-export const typeIcons = {
+export const typeIcons: Record<ContentType, any> = {
   "multiple-choice": QuestionMarkCircleIcon,
   "true-false": CheckBadgeIcon,
   "who-am-i": FaceSmileIcon,
-  stats: TrophyIcon,
+  stat: TrophyIcon,
   wisdom: SparklesIcon,
   motivational: SunIcon,
-  greetings: ChatBubbleBottomCenterTextIcon,
+  greeting: ChatBubbleBottomCenterTextIcon,
   "penalty-box-philosopher": AcademicCapIcon,
 };
 
-export const typeNames = {
+export const typeNames: Record<ContentType, string> = {
   "multiple-choice": "Multiple Choice",
   "true-false": "True/False",
   "who-am-i": "Who Am I?",
-  stats: "Stats",
+  stat: "Stats",
   wisdom: "Wisdom",
   motivational: "Motivational",
-  greetings: "Greetings",
+  greeting: "Greetings",
   "penalty-box-philosopher": "Penalty Box Philosopher",
 };
 

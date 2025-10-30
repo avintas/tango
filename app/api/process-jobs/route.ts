@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { ContentType } from "@/components/content-type-selector";
+import { ContentType } from "@/lib/types";
 
 // Helper function to introduce a delay
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -11,9 +11,9 @@ const getBadgeKey = (contentType: ContentType): string => {
     "multiple-choice": "mc",
     "true-false": "tf",
     "who-am-i": "whoami",
-    stats: "stats",
+    stat: "stat",
     motivational: "motivational",
-    greetings: "greetings",
+    greeting: "greeting",
     "penalty-box-philosopher": "pbp",
     wisdom: "wisdom",
   };
@@ -26,11 +26,11 @@ const getApiEndpoint = (contentType: ContentType): string => {
     "multiple-choice": "/api/gemini/generate-multiple-choice",
     "true-false": "/api/gemini/generate-true-false",
     "who-am-i": "/api/gemini/generate-who-am-i",
-    stats: "/api/gemini/generate-stats",
+    stat: "/api/gemini/generate-stats",
     motivational: "/api/gemini/generate-motivational",
-    greetings: "/api/gemini/generate-greetings",
+    greeting: "/api/gemini/generate-greetings",
     "penalty-box-philosopher": "/api/gemini/generate-penalty-box-philosopher",
-    wisdom: "", // Wisdom is not generated this way
+    wisdom: "/api/gemini/generate-wisdom",
   };
   return endpointMap[contentType];
 };
@@ -45,9 +45,9 @@ const getSaveEndpoint = (contentType: ContentType): string => {
   if (triviaTypes.includes(contentType)) return "/api/trivia/save";
 
   const uniContentTypes: ContentType[] = [
-    "stats",
+    "stat",
     "motivational",
-    "greetings",
+    "greeting",
     "penalty-box-philosopher",
     "wisdom",
   ];

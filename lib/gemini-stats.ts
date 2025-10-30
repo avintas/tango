@@ -5,7 +5,7 @@
  */
 
 import { gemini } from "@/lib/gemini";
-import { UniContent } from "./content-types";
+import { UniContent } from "./types";
 import { extractJsonObject } from "./content-helpers";
 
 export interface StatsGenerationRequest {
@@ -83,7 +83,7 @@ export async function generateStatsContent(
     // Add the content_type to each item before returning
     const finalData = parsedResponse.items.map((item: any) => ({
       ...item,
-      content_type: "statistic",
+      content_type: "stat",
     }));
 
     return {

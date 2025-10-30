@@ -4,7 +4,7 @@
  */
 
 import { gemini } from "@/lib/gemini";
-import { UniContent } from "./content-types";
+import { UniContent } from "./types";
 import { extractJsonObject } from "./content-helpers";
 
 export interface WisdomGenerationRequest {

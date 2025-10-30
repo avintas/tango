@@ -8,7 +8,7 @@ import { Textarea } from "@/components/textarea";
 import { Switch } from "@/components/switch";
 import { Alert } from "@/components/alert";
 import { createSlug } from "@/lib/text-processing";
-import type { Category } from "@/lib/content-types";
+import type { Category } from "@/lib/supabase";
 import { Field, FieldGroup, Fieldset, Label } from "@/components/fieldset";
 
 interface CategoryFormProps {

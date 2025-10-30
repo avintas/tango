@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateStatsContent } from "@/lib/gemini-stats";
-import { UniContent } from "@/lib/content-types";
+import { UniContent } from "@/lib/types";
 
 /**
  * Formats structured stats content into a readable string for UI display.

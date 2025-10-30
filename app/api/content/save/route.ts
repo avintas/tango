@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { NextResponse } from "next/server";
-import { UniContent } from "@/lib/content-types";
+import { UniContent } from "@/lib/types";
 
 interface SaveRequest {
   itemsToSave: UniContent[];
@@ -32,8 +32,7 @@ export async function POST(req: Request) {
     let recordsToInsert: any[];
 
     switch (contentType) {
-      case "statistics":
-      case "statistic": // Handle both singular and plural
+      case "stat":
         tableName = "collection_stats";
         recordsToInsert = itemsToSave.map((item) => ({
           stat_text: item.content_text,
@@ -62,8 +61,7 @@ export async function POST(req: Request) {
         }));
         break;
 
-      case "greetings":
-      case "greeting": // Handle both singular and plural
+      case "greeting":
         tableName = "collection_greetings";
         recordsToInsert = itemsToSave.map((item) => ({
           greeting_text: item.content_text,
@@ -92,7 +90,7 @@ export async function POST(req: Request) {
         return NextResponse.json(
           {
             success: false,
-            error: `Unsupported content type: ${contentType}. Expected: statistics, motivational, greetings, wisdom, or penalty-box-philosopher`,
+            error: `Unsupported content type: ${contentType}. Expected: stat, motivational, greeting, wisdom, or penalty-box-philosopher`,
           },
           { status: 400 },
         );

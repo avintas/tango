@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateWisdomContent } from "@/lib/gemini-wisdom";
-import { UniContent } from "@/lib/content-types";
+import { UniContent } from "@/lib/types";
 
 /**
  * Formats structured wisdom content into a readable string for UI display.

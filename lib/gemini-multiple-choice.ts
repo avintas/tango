@@ -1,5 +1,5 @@
 import { gemini } from "@/lib/gemini";
-import { TriviaQuestion } from "./content-types"; // Assuming TriviaQuestion will be defined here or similar
+import { TriviaQuestion } from "./types"; // Assuming TriviaQuestion will be defined here or similar
 import { extractJsonObject } from "./content-helpers"; // Re-using the helper
 
 export interface MultipleChoiceGenerationRequest {
