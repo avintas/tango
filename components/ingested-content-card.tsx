@@ -1,37 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import clsx from "clsx";
+import { getBadgeConfig } from "@/config/content-badges";
 
-interface StatItem {
+interface IngestedContentItem {
   id: number;
-  stat_text: string;
-  stat_value?: string | null;
-  stat_category?: string | null;
-  year?: number | null;
-  theme?: string | null;
-  category?: string | null;
-  attribution?: string | null;
+  content_text: string;
+  word_count?: number;
+  char_count?: number;
+  used_for?: string[];
+  themes?: string;
+  title?: string;
   status?: string | null;
-  used_in?: string[] | null;
-  created_at: string;
+  created_at?: string;
 }
 
-interface StatCardProps {
-  item: StatItem;
+interface IngestedContentCardProps {
+  item: IngestedContentItem;
   onStatusChange?: (id: number, newStatus: string | null) => void;
   onDelete?: (id: number) => void;
 }
 
-export default function StatCard({
+export default function IngestedContentCard({
   item,
   onStatusChange,
   onDelete,
-}: StatCardProps) {
+}: IngestedContentCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-
-  const charCount = item.stat_text.length;
-  const wordCount = item.stat_text.split(/\s+/).filter(Boolean).length;
 
   const getStatusBadge = (status?: string | null) => {
     if (status === "published") {
@@ -57,10 +54,7 @@ export default function StatCard({
 
   const handleCopy = async () => {
     try {
-      const textToCopy = item.stat_value
-        ? `${item.stat_text}\n${item.stat_value}`
-        : item.stat_text;
-      await navigator.clipboard.writeText(textToCopy);
+      await navigator.clipboard.writeText(item.content_text);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (error) {
@@ -73,7 +67,7 @@ export default function StatCard({
 
     setIsProcessing(true);
     try {
-      const response = await fetch(`/api/stats/${item.id}`, {
+      const response = await fetch(`/api/content-source/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -95,13 +89,17 @@ export default function StatCard({
   const handleDelete = async () => {
     if (!onDelete || isProcessing) return;
 
-    if (!confirm("Are you sure you want to delete this stat?")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this ingested content? This action cannot be undone.",
+      )
+    ) {
       return;
     }
 
     setIsProcessing(true);
     try {
-      const response = await fetch(`/api/stats/${item.id}`, {
+      const response = await fetch(`/api/content-source/${item.id}`, {
         method: "DELETE",
       });
 
@@ -125,69 +123,75 @@ export default function StatCard({
   return (
     <div className="p-4 rounded-lg bg-white border border-gray-300 hover:border-indigo-300 transition-colors">
       <div className="flex items-start gap-3">
-        <span className="text-2xl">📊</span>
+        <span className="text-2xl">📄</span>
         <div className="flex-1 min-w-0">
           {/* Status Badge */}
           <div className="mb-2">{getStatusBadge(currentStatus)}</div>
 
-          {/* Stat Text */}
-          <p className="text-sm text-gray-900 mb-2 leading-relaxed">
-            {item.stat_text}
-          </p>
-
-          {/* Stat Value */}
-          {item.stat_value && (
-            <p className="text-base font-semibold text-indigo-700 mb-2">
-              {item.stat_value}
-            </p>
+          {/* Title (if exists) */}
+          {item.title && (
+            <h3 className="text-sm font-semibold text-gray-900 mb-1 truncate">
+              {item.title}
+            </h3>
           )}
+
+          {/* Content Preview - First 4 lines using CSS line-clamp */}
+          <div className="text-sm text-gray-900 mb-2 leading-relaxed">
+            <p
+              className="line-clamp-4"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {item.content_text}
+            </p>
+          </div>
 
           {/* Metadata Row */}
           <div className="flex items-center gap-1.5 flex-wrap text-xs text-gray-500 mb-3">
-            {item.stat_category && (
+            {item.themes && (
               <>
-                <span className="text-blue-600 font-medium capitalize">
-                  {item.stat_category}
+                <span className="text-purple-600 font-medium capitalize">
+                  {item.themes}
                 </span>
                 <span>•</span>
               </>
             )}
-            {item.year && (
+            {item.used_for && item.used_for.length > 0 && (
               <>
-                <span className="text-purple-600 font-medium">{item.year}</span>
+                <div className="flex gap-1">
+                  {getBadgeConfig(item.used_for).map((badge) => (
+                    <span
+                      key={badge.key}
+                      className={clsx(
+                        "inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold rounded",
+                        badge.bgColor,
+                        badge.textColor,
+                      )}
+                      title={badge.title}
+                    >
+                      {badge.label}
+                    </span>
+                  ))}
+                </div>
                 <span>•</span>
               </>
             )}
-            {item.theme && (
+            {item.word_count && (
               <>
-                <span className="capitalize">{item.theme}</span>
+                <span>{item.word_count} words</span>
                 <span>•</span>
               </>
             )}
-            {item.category && (
+            {item.char_count && (
               <>
-                <span className="capitalize">{item.category}</span>
+                <span>{item.char_count} chars</span>
                 <span>•</span>
               </>
             )}
-            {item.used_in && item.used_in.length > 0 && (
-              <>
-                <span className="text-green-700 font-medium">
-                  ✓ Used {item.used_in.length}x
-                </span>
-                <span>•</span>
-              </>
-            )}
-            {item.attribution && (
-              <>
-                <span>{item.attribution}</span>
-                <span>•</span>
-              </>
-            )}
-            <span>{charCount} chars</span>
-            <span>•</span>
-            <span>{wordCount} words</span>
-            <span>•</span>
             <span>ID: {item.id}</span>
           </div>
 

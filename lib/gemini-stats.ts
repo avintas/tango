@@ -5,8 +5,8 @@
  */
 
 import { gemini } from "@/lib/gemini";
-import { UniContent } from "./types";
-import { extractJsonObject } from "./content-helpers";
+import { CollectionContent } from "./types";
+import { cleanJsonString } from "./content-helpers";
 
 export interface StatsGenerationRequest {
   sourceContent: string;
@@ -15,7 +15,7 @@ export interface StatsGenerationRequest {
 
 export interface StatsGenerationResponse {
   success: boolean;
-  data?: UniContent[];
+  data?: CollectionContent[];
   error?: string;
 }
 
@@ -55,6 +55,9 @@ export async function generateStatsContent(
           ],
         },
       ],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
     });
 
     const text = result.text;
@@ -65,13 +68,8 @@ export async function generateStatsContent(
       };
     }
 
-    const parsedResponse = extractJsonObject(text);
-    if (!parsedResponse) {
-      return {
-        success: false,
-        error: "The AI returned an invalid format. Please try again.",
-      };
-    }
+    const cleanText = cleanJsonString(text);
+    const parsedResponse = JSON.parse(cleanText);
 
     if (!parsedResponse.items || !Array.isArray(parsedResponse.items)) {
       return {

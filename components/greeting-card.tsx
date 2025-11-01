@@ -13,17 +13,17 @@ interface GreetingItem {
 
 interface GreetingCardProps {
   item: GreetingItem;
-  onArchive?: (id: number) => void;
+  onStatusChange?: (id: number, newStatus: string) => void;
   onDelete?: (id: number) => void;
 }
 
 export default function GreetingCard({
   item,
-  onArchive,
+  onStatusChange,
   onDelete,
 }: GreetingCardProps) {
-  const [isArchiving, setIsArchiving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Get character and word count
   const charCount = item.greeting_text.length;
@@ -31,13 +31,6 @@ export default function GreetingCard({
 
   // Get status badge styling
   const getStatusBadge = (status?: string | null) => {
-    if (!status || status === "draft") {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-          Draft
-        </span>
-      );
-    }
     if (status === "published") {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
@@ -52,39 +45,57 @@ export default function GreetingCard({
         </span>
       );
     }
-    return null;
+    // Default to unpublished (for NULL or anything else)
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+        Unpublished
+      </span>
+    );
   };
 
-  const handleArchive = async () => {
-    if (!onArchive) return;
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(item.greeting_text);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      alert("Failed to copy to clipboard");
+    }
+  };
 
-    setIsArchiving(true);
+  const handleStatusChange = async (newStatus: string | null) => {
+    if (!onStatusChange) return;
+
+    setIsProcessing(true);
     try {
       const response = await fetch(`/api/greetings/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "archived" }),
+        body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!response.ok) throw new Error("Failed to archive");
+      if (!response.ok) throw new Error("Failed to update status");
 
-      onArchive(item.id);
+      onStatusChange(item.id, newStatus || "");
     } catch (error) {
-      alert("Failed to archive greeting");
+      alert(`Failed to update status`);
       console.error(error);
     } finally {
-      setIsArchiving(false);
+      setIsProcessing(false);
     }
   };
 
   const handleDelete = async () => {
     if (!onDelete) return;
 
-    if (!confirm("Are you sure you want to delete this greeting?")) {
+    if (
+      !confirm("Are you sure you want to permanently delete this greeting?")
+    ) {
       return;
     }
 
-    setIsDeleting(true);
+    setIsProcessing(true);
     try {
       const response = await fetch(`/api/greetings/${item.id}`, {
         method: "DELETE",
@@ -97,73 +108,120 @@ export default function GreetingCard({
       alert("Failed to delete greeting");
       console.error(error);
     } finally {
-      setIsDeleting(false);
+      setIsProcessing(false);
     }
   };
 
+  const currentStatus = item.status;
+  const isArchived = currentStatus === "archived";
+  const isPublished = currentStatus === "published";
+  const isUnpublished = !isPublished && !isArchived;
+
   return (
-    <div className="p-4 rounded-lg bg-white border border-gray-300">
-      <div className="flex items-start gap-3">
-        <span className="text-2xl">👋</span>
-        <div className="flex-1">
+    <div className="p-3 rounded-lg bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-2">
+        <span className="text-lg">👋</span>
+        <div className="flex-1 min-w-0">
           {/* Status Badge */}
-          <div className="mb-2">{getStatusBadge(item.status)}</div>
+          <div className="mb-1">{getStatusBadge(item.status)}</div>
 
-          {/* Greeting Text */}
-          <p className="text-gray-900 mb-3">{item.greeting_text}</p>
+          {/* Greeting Text - Small font */}
+          <p className="text-sm text-gray-900 mb-2 leading-relaxed">
+            {item.greeting_text}
+          </p>
 
-          {/* Metadata Row */}
-          <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600">
-            {/* Type */}
-            <span className="text-indigo-600 font-medium">Greeting</span>
+          {/* Metadata Row - Extra small font */}
+          <div className="flex items-center gap-1.5 flex-wrap text-xs text-gray-500 mb-2">
+            <span className="font-medium">ID: {item.id}</span>
+            <span>•</span>
+            <span>{charCount} chars</span>
+            <span>•</span>
+            <span>{wordCount} words</span>
 
-            {/* ID */}
-            <span>• ID: {item.id}</span>
-
-            {/* Character Count */}
-            <span>• {charCount} chars</span>
-
-            {/* Word Count */}
-            <span>• {wordCount} words</span>
-
-            {/* Used In Count */}
             {item.used_in && item.used_in.length > 0 && (
-              <span className="text-green-700 font-medium">
-                • ✓ Used {item.used_in.length} time
-                {item.used_in.length !== 1 ? "s" : ""}
-              </span>
+              <>
+                <span>•</span>
+                <span className="text-green-600 font-medium">
+                  ✓ Used {item.used_in.length}x
+                </span>
+              </>
             )}
 
-            {/* Attribution */}
             {item.attribution && (
-              <span className="text-gray-700">• {item.attribution}</span>
+              <>
+                <span>•</span>
+                <span className="text-gray-600">{item.attribution}</span>
+              </>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Copy Button */}
+            <button
+              onClick={handleCopy}
+              disabled={isProcessing}
+              className="px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 transition-colors"
+              title="Copy to clipboard"
+            >
+              {isCopied ? "✓ Copied!" : "📋 Copy"}
+            </button>
+
+            {/* Status Change Buttons */}
+            {!isArchived && (
+              <>
+                {isPublished ? (
+                  <button
+                    onClick={() => handleStatusChange(null)}
+                    disabled={isProcessing}
+                    className="px-2 py-1 text-xs font-medium text-yellow-700 bg-yellow-50 rounded hover:bg-yellow-100 disabled:opacity-50 transition-colors"
+                    title="Unpublish"
+                  >
+                    📥 Unpublish
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleStatusChange("published")}
+                    disabled={isProcessing}
+                    className="px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded hover:bg-green-100 disabled:opacity-50 transition-colors"
+                    title="Publish"
+                  >
+                    📤 Publish
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleStatusChange("archived")}
+                  disabled={isProcessing}
+                  className="px-2 py-1 text-xs font-medium text-gray-700 bg-gray-50 rounded hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                  title="Archive"
+                >
+                  🗄️ Archive
+                </button>
+              </>
             )}
 
-            {/* Action Buttons */}
-            {(onArchive || onDelete) && (
-              <div className="ml-auto flex items-center gap-2">
-                {onArchive && item.status !== "archived" && (
-                  <button
-                    onClick={handleArchive}
-                    disabled={isArchiving}
-                    className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                    title="Archive"
-                  >
-                    {isArchiving ? "..." : "🗄️"}
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                    title="Delete"
-                  >
-                    {isDeleting ? "..." : "🗑️"}
-                  </button>
-                )}
-              </div>
+            {/* Restore button for archived items */}
+            {isArchived && (
+              <button
+                onClick={() => handleStatusChange(null)}
+                disabled={isProcessing}
+                className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 disabled:opacity-50 transition-colors"
+                title="Restore"
+              >
+                🔄 Restore
+              </button>
             )}
+
+            {/* Delete Button */}
+            <button
+              onClick={handleDelete}
+              disabled={isProcessing}
+              className="px-2 py-1 text-xs font-medium text-red-700 bg-red-50 rounded hover:bg-red-100 disabled:opacity-50 transition-colors"
+              title="Delete permanently"
+            >
+              🗑️ Delete
+            </button>
           </div>
         </div>
       </div>

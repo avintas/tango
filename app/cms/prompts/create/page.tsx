@@ -91,7 +91,7 @@ const allowedPromptTypes: ContentType[] = [
   "stat",
   "motivational",
   "greeting",
-  "penalty-box-philosopher",
+  "wisdom",
 ];
 
 export default function PromptCreationPage() {

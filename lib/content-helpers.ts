@@ -4,23 +4,20 @@
  */
 
 /**
- * Extract JSON object from Gemini AI response text
- * Handles responses that may be wrapped in markdown code blocks or conversational text
- * @param text Raw text response from AI
- * @returns Parsed JSON object or null if parsing fails
+ * Extract JSON object string from a text response.
+ * Handles responses that may be wrapped in markdown code blocks or conversational text.
+ * @param text Raw text response from AI.
+ * @returns A string containing only the JSON object, or the original text if no object is found.
  */
-export function extractJsonObject(text: string): any | null {
-  try {
-    const jsonStartIndex = text.indexOf("{");
-    const jsonEndIndex = text.lastIndexOf("}");
-    if (jsonStartIndex === -1 || jsonEndIndex === -1) {
-      console.error("No JSON object found in the response.");
-      return null;
-    }
-    const jsonString = text.substring(jsonStartIndex, jsonEndIndex + 1);
-    return JSON.parse(jsonString);
-  } catch (e) {
-    console.error("Failed to parse Gemini response as JSON:", text);
-    return null;
+export function cleanJsonString(text: string): string {
+  const jsonStartIndex = text.indexOf("{");
+  const jsonEndIndex = text.lastIndexOf("}");
+
+  if (jsonStartIndex === -1 || jsonEndIndex === -1) {
+    // If we can't find a JSON object, return the original text
+    // so JSON.parse can fail with a clear error.
+    return text;
   }
+
+  return text.substring(jsonStartIndex, jsonEndIndex + 1);
 }

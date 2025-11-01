@@ -4,8 +4,8 @@
  */
 
 import { gemini } from "@/lib/gemini";
-import { UniContent } from "./types";
-import { extractJsonObject } from "./content-helpers";
+import { CollectionContent } from "./types";
+import { cleanJsonString } from "./content-helpers";
 
 export interface WisdomGenerationRequest {
   sourceContent: string;
@@ -14,7 +14,7 @@ export interface WisdomGenerationRequest {
 
 export interface WisdomGenerationResponse {
   success: boolean;
-  data?: UniContent[];
+  data?: CollectionContent[];
   error?: string;
 }
 
@@ -46,6 +46,9 @@ export async function generateWisdomContent(
           ],
         },
       ],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
     });
 
     const text = result.text;
@@ -56,13 +59,8 @@ export async function generateWisdomContent(
       };
     }
 
-    const parsedResponse = extractJsonObject(text);
-    if (!parsedResponse) {
-      return {
-        success: false,
-        error: "The AI returned an invalid format. Please try again.",
-      };
-    }
+    const cleanText = cleanJsonString(text);
+    const parsedResponse = JSON.parse(cleanText);
 
     if (!parsedResponse.items || !Array.isArray(parsedResponse.items)) {
       return {

@@ -1,17 +1,16 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { NextResponse } from "next/server";
-import { UniContent } from "@/lib/types";
+import { CollectionContent, TriviaQuestion } from "@/lib/types";
 
+// The items to save can be one of two types, so we accept a flexible array
 interface SaveRequest {
-  itemsToSave: UniContent[];
+  itemsToSave: (CollectionContent | TriviaQuestion)[];
   sourceContentId: string | null;
-  createdBy: string | null;
 }
 
 export async function POST(req: Request) {
   try {
-    const { itemsToSave, sourceContentId, createdBy }: SaveRequest =
-      await req.json();
+    const { itemsToSave, sourceContentId }: SaveRequest = await req.json();
 
     if (
       !itemsToSave ||
@@ -24,64 +23,102 @@ export async function POST(req: Request) {
       );
     }
 
-    // Determine content type from first item
-    const contentType = itemsToSave[0].content_type;
+    // Determine content type from the first item. It can be one of two fields.
+    const firstItem = itemsToSave[0];
+    const contentType =
+      "content_type" in firstItem
+        ? firstItem.content_type
+        : firstItem.question_type;
 
-    // Route to the appropriate dedicated table based on content type
     let tableName: string;
     let recordsToInsert: any[];
 
     switch (contentType) {
       case "stat":
         tableName = "collection_stats";
-        recordsToInsert = itemsToSave.map((item) => ({
+        recordsToInsert = itemsToSave.map((item: CollectionContent) => ({
           stat_text: item.content_text,
-          stat_value: item.stat_value || null,
-          stat_category: item.stat_category || null,
-          year: item.year || null,
-          theme: item.theme || null,
-          category: item.category || null,
-          attribution: item.attribution || null,
-          status: "draft",
+          stat_value: item.stat_value,
+          stat_category: item.stat_category,
+          year: item.year,
+          theme: item.theme,
+          category: item.category,
+          attribution: item.attribution,
           source_content_id: sourceContentId ? Number(sourceContentId) : null,
         }));
         break;
 
       case "motivational":
         tableName = "collection_motivational";
-        recordsToInsert = itemsToSave.map((item) => ({
+        recordsToInsert = itemsToSave.map((item: CollectionContent) => ({
           quote: item.content_text,
-          author: item.author || null,
-          context: item.context || null,
-          theme: item.theme || null,
-          category: item.category || null,
-          attribution: item.attribution || null,
-          status: "draft",
+          attribution: item.author, // Map author to attribution column
+          context: item.context,
+          theme: item.theme,
+          category: item.category,
           source_content_id: sourceContentId ? Number(sourceContentId) : null,
         }));
         break;
 
       case "greeting":
         tableName = "collection_greetings";
-        recordsToInsert = itemsToSave.map((item) => ({
+        recordsToInsert = itemsToSave.map((item: CollectionContent) => ({
           greeting_text: item.content_text,
-          attribution: item.attribution || null,
-          status: "draft",
+          attribution: item.attribution,
           source_content_id: sourceContentId ? Number(sourceContentId) : null,
         }));
         break;
 
-      case "penalty-box-philosopher":
       case "wisdom":
         tableName = "collection_wisdom";
-        recordsToInsert = itemsToSave.map((item) => ({
+        recordsToInsert = itemsToSave.map((item: CollectionContent) => ({
           title: item.content_title || "Untitled",
           musing: item.musings || item.content_text,
-          from_the_box: item.from_the_box || "",
-          theme: item.theme || null,
-          category: item.category || null,
+          from_the_box: item.from_the_box,
+          theme: item.theme,
+          category: item.category,
           attribution: item.attribution || "Penalty Box Philosopher",
-          status: "draft",
+          source_content_id: sourceContentId ? Number(sourceContentId) : null,
+        }));
+        break;
+
+      // Handle Trivia Types
+      case "multiple-choice":
+        tableName = "trivia_multiple_choice";
+        recordsToInsert = itemsToSave.map((item: TriviaQuestion) => ({
+          question_text: item.question_text,
+          correct_answer: item.correct_answer,
+          wrong_answers: item.wrong_answers,
+          explanation: item.explanation,
+          theme: item.theme,
+          category: item.category,
+          attribution: item.attribution,
+          source_content_id: sourceContentId ? Number(sourceContentId) : null,
+        }));
+        break;
+
+      case "true-false":
+        tableName = "true_false_trivia";
+        recordsToInsert = itemsToSave.map((item: TriviaQuestion) => ({
+          question_text: item.question_text,
+          is_true: item.correct_answer.toLowerCase() === "true" ? true : false,
+          explanation: item.explanation,
+          theme: item.theme,
+          category: item.category,
+          attribution: item.attribution,
+          source_content_id: sourceContentId ? Number(sourceContentId) : null,
+        }));
+        break;
+
+      case "who-am-i":
+        tableName = "trivia_who_am_i";
+        recordsToInsert = itemsToSave.map((item: TriviaQuestion) => ({
+          question_text: item.question_text,
+          correct_answer: item.correct_answer,
+          explanation: item.explanation,
+          theme: item.theme,
+          category: item.category,
+          attribution: item.attribution,
           source_content_id: sourceContentId ? Number(sourceContentId) : null,
         }));
         break;
@@ -90,13 +127,12 @@ export async function POST(req: Request) {
         return NextResponse.json(
           {
             success: false,
-            error: `Unsupported content type: ${contentType}. Expected: stat, motivational, greeting, wisdom, or penalty-box-philosopher`,
+            error: `Unsupported content type for saving: ${contentType}`,
           },
           { status: 400 },
         );
     }
 
-    // Insert into the appropriate dedicated table
     const { data, error, count } = await supabaseAdmin
       .from(tableName)
       .insert(recordsToInsert)
@@ -110,7 +146,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // After successful insertion, track usage if sourceContentId is provided
     if (sourceContentId && itemsToSave.length > 0) {
       const { error: rpcError } = await supabaseAdmin.rpc(
         "append_to_used_for",
@@ -122,10 +157,9 @@ export async function POST(req: Request) {
 
       if (rpcError) {
         console.warn(
-          `Content saved to ${tableName} (Count: ${count}), but failed to track usage for source ID ${sourceContentId}:`,
+          `Content saved (Count: ${count}), but failed to track usage for source ID ${sourceContentId}:`,
           rpcError.message,
         );
-        // Do not block success response if only tracking fails
       }
     }
 
@@ -133,12 +167,14 @@ export async function POST(req: Request) {
       success: true,
       data,
       count,
-      table: tableName, // Include which table was used for transparency
+      table: tableName,
     });
   } catch (error) {
-    console.error("API Error:", error);
+    console.error("API Save Error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "An unexpected error occurred";
     return NextResponse.json(
-      { success: false, error: "An unexpected error occurred" },
+      { success: false, error: errorMessage },
       { status: 500 },
     );
   }

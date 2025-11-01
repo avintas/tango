@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { generateWisdomContent } from "@/lib/gemini-wisdom";
-import { UniContent } from "@/lib/types";
+import { CollectionContent } from "@/lib/types";
 
 /**
  * Formats structured wisdom content into a readable string for UI display.
- * @param data An array of UniContent objects.
+ * @param data An array of CollectionContent objects.
  * @returns A single string with items separated by '---'.
  */
-function formatContentForDisplay(data: UniContent[]): string {
+function formatContentForDisplay(data: CollectionContent[]): string {
   if (!data || data.length === 0) {
     return "No content generated.";
   }

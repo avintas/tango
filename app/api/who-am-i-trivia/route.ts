@@ -10,6 +10,34 @@ import type {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const statsOnly = searchParams.get("stats") === "true";
+
+    if (statsOnly) {
+      const { data: allItems } = await supabaseAdmin
+        .from("trivia_who_am_i")
+        .select("status");
+
+      if (!allItems) {
+        return NextResponse.json({
+          success: true,
+          stats: { unpublished: 0, published: 0, archived: 0 },
+        });
+      }
+
+      const stats = {
+        unpublished: allItems.filter(
+          (item) => item.status !== "published" && item.status !== "archived",
+        ).length,
+        published: allItems.filter((item) => item.status === "published")
+          .length,
+        archived: allItems.filter((item) => item.status === "archived").length,
+      };
+
+      return NextResponse.json({
+        success: true,
+        stats,
+      });
+    }
 
     // Parse query parameters
     const params: WhoAmITriviaFetchParams = {
@@ -37,7 +65,15 @@ export async function GET(request: NextRequest) {
       query = query.eq("difficulty", params.difficulty);
     }
     if (params.status) {
-      query = query.eq("status", params.status);
+      if (params.status === "unpublished") {
+        query = query.or(
+          "status.is.null,and(status.not.eq.published,status.not.eq.archived)",
+        );
+      } else if (params.status === "published") {
+        query = query.eq("status", "published");
+      } else if (params.status === "archived") {
+        query = query.eq("status", "archived");
+      }
     }
 
     // Apply pagination and sorting

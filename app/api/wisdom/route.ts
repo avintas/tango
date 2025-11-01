@@ -10,6 +10,35 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
+    const statsOnly = searchParams.get("stats") === "true";
+
+    if (statsOnly) {
+      const { data: allItems } = await supabase
+        .from("collection_wisdom")
+        .select("status");
+
+      if (!allItems) {
+        return NextResponse.json({
+          success: true,
+          stats: { unpublished: 0, published: 0, archived: 0 },
+        });
+      }
+
+      const stats = {
+        unpublished: allItems.filter(
+          (item) => item.status !== "published" && item.status !== "archived",
+        ).length,
+        published: allItems.filter((item) => item.status === "published")
+          .length,
+        archived: allItems.filter((item) => item.status === "archived").length,
+      };
+
+      return NextResponse.json({
+        success: true,
+        stats,
+      });
+    }
+
     const status = searchParams.get("status");
     const theme = searchParams.get("theme");
     const limit = parseInt(searchParams.get("limit") || "20", 10);
@@ -20,11 +49,20 @@ export async function GET(request: NextRequest) {
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false });
 
-    // Apply filters
+    // Apply status filter
     if (status) {
-      query = query.eq("status", status);
+      if (status === "unpublished") {
+        query = query.or(
+          "status.is.null,and(status.not.eq.published,status.not.eq.archived)",
+        );
+      } else if (status === "published") {
+        query = query.eq("status", "published");
+      } else if (status === "archived") {
+        query = query.eq("status", "archived");
+      }
     }
 
+    // Apply theme filter
     if (theme) {
       query = query.eq("theme", theme);
     }

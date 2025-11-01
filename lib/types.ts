@@ -19,7 +19,6 @@ export type ContentType =
   | "greeting"
   | "motivational"
   | "wisdom"
-  | "penalty-box-philosopher"
   // Trivia question types
   | "multiple-choice"
   | "true-false"
@@ -33,7 +32,6 @@ export const ALL_CONTENT_TYPES: ContentType[] = [
   "greeting",
   "motivational",
   "wisdom",
-  "penalty-box-philosopher",
   "multiple-choice",
   "true-false",
   "who-am-i",
@@ -47,7 +45,6 @@ export const COLLECTION_TYPES: ContentType[] = [
   "greeting",
   "motivational",
   "wisdom",
-  "penalty-box-philosopher",
 ];
 
 /**
@@ -73,14 +70,9 @@ export const TRIVIA_TYPES: ContentType[] = [
  * - motivational: content_text, author, context, attribution
  * - wisdom: content_title, musings, from_the_box, theme, attribution
  */
-export interface UniContent {
+export interface CollectionContent {
   // Core fields (all types)
-  content_type:
-    | "stat"
-    | "greeting"
-    | "motivational"
-    | "wisdom"
-    | "penalty-box-philosopher";
+  content_type: "stat" | "greeting" | "motivational" | "wisdom";
   content_text: string;
 
   // Stat-specific fields
@@ -164,7 +156,6 @@ export function getTableName(contentType: ContentType): string {
     greeting: "collection_greetings",
     motivational: "collection_motivational",
     wisdom: "collection_wisdom",
-    "penalty-box-philosopher": "collection_wisdom", // Uses same table as wisdom
     "multiple-choice": "trivia_multiple_choice",
     "true-false": "true_false_trivia",
     "who-am-i": "trivia_who_am_i",

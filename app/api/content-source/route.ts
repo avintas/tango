@@ -9,30 +9,69 @@ import { CreateIngestedContent } from "@/lib/supabase";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const statsOnly = searchParams.get("stats") === "true";
+
+    if (statsOnly) {
+      const { data: allItems } = await supabaseAdmin
+        .from("ingested")
+        .select("status");
+
+      if (!allItems) {
+        return NextResponse.json({
+          success: true,
+          stats: { unpublished: 0, published: 0, archived: 0 },
+        });
+      }
+
+      const stats = {
+        unpublished: allItems.filter(
+          (item) => item.status !== "published" && item.status !== "archived",
+        ).length,
+        published: allItems.filter((item) => item.status === "published")
+          .length,
+        archived: allItems.filter((item) => item.status === "archived").length,
+      };
+
+      return NextResponse.json({
+        success: true,
+        stats,
+      });
+    }
+
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
     const status = searchParams.get("status");
     const search = searchParams.get("search");
 
-    let query = supabaseAdmin.from("ingested").select("*", { count: "exact" });
+    let query = supabaseAdmin
+      .from("ingested")
+      .select("*", { count: "exact" })
+      .order("id", { ascending: false });
 
     // Apply status filter if provided
     if (status) {
-      query = query.eq("status", status);
+      if (status === "unpublished") {
+        query = query.or(
+          "status.is.null,and(status.not.eq.published,status.not.eq.archived)",
+        );
+      } else if (status === "published") {
+        query = query.eq("status", "published");
+      } else if (status === "archived") {
+        query = query.eq("status", "archived");
+      }
     }
 
     // Apply search filter if provided
     if (search) {
-      // Assuming you want to search in 'title' and 'content_text' fields
       query = query.or(
         `title.ilike.%${search}%,content_text.ilike.%${search}%`,
       );
     }
 
-    // Apply ordering, pagination, and execute the combined query
-    const { data, error, count } = await query
-      .order("id", { ascending: false })
-      .range(offset, offset + limit - 1);
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
 
     if (error) {
       throw new Error(`Database error: ${error.message}`);

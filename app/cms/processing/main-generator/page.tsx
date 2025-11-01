@@ -6,7 +6,7 @@ import ContentTypeSelector, {
   ContentType,
 } from "@/components/content-type-selector";
 import { useAuth } from "@/lib/auth-context";
-import { UniContent, TriviaQuestion } from "@/lib/types";
+import { CollectionContent, TriviaQuestion } from "@/lib/types";
 
 interface GenerationJob {
   id: string;
@@ -27,7 +27,7 @@ export default function MainGeneratorPage() {
   const [generatedContentForDisplay, setGeneratedContentForDisplay] =
     useState("");
   const [structuredDataForSaving, setStructuredDataForSaving] = useState<
-    (UniContent | TriviaQuestion)[]
+    (CollectionContent | TriviaQuestion)[]
   >([]);
   const [generationError, setGenerationError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -48,7 +48,7 @@ export default function MainGeneratorPage() {
     "stat",
     "motivational",
     "greeting",
-    "penalty-box-philosopher",
+    "wisdom",
   ];
 
   // Check for source content and prompt from storage on mount
@@ -238,46 +238,15 @@ export default function MainGeneratorPage() {
       stat: "/api/gemini/generate-stats",
       motivational: "/api/gemini/generate-motivational",
       greeting: "/api/gemini/generate-greetings",
-      "penalty-box-philosopher": "/api/gemini/generate-penalty-box-philosopher",
-      wisdom: "", // Valid ContentType but not handled by this generator
+      wisdom: "/api/gemini/generate-penalty-box-philosopher",
     };
-    // The Record type will enforce that all keys are valid ContentTypes.
-    // We add a check here to be safe, but it's mainly for documentation.
-    const filteredMap = Object.keys(endpointMap)
-      .filter((key) => key !== "wisdom")
-      .reduce(
-        (obj, key) => {
-          obj[key as ContentType] = endpointMap[key as ContentType];
-          return obj;
-        },
-        {} as Record<ContentType, string>,
-      );
 
-    return filteredMap[contentType];
+    return endpointMap[contentType];
   };
 
-  // The save endpoint is now unified for different categories of content.
+  // All content types use the unified save endpoint
   const getSaveEndpoint = (contentType: ContentType): string => {
-    const triviaTypes: ContentType[] = [
-      "multiple-choice",
-      "true-false",
-      "who-am-i",
-    ];
-    const uniContentTypes: ContentType[] = [
-      "stat",
-      "motivational",
-      "greeting",
-      "penalty-box-philosopher",
-      "wisdom",
-    ];
-
-    if (triviaTypes.includes(contentType)) {
-      return "/api/trivia/save";
-    }
-    if (uniContentTypes.includes(contentType)) {
-      return "/api/content/save";
-    }
-    return ""; // Should not happen with a valid content type
+    return "/api/content/save";
   };
 
   const handleGenerateContent = async () => {
@@ -364,7 +333,6 @@ export default function MainGeneratorPage() {
         body: JSON.stringify({
           itemsToSave: structuredDataForSaving,
           sourceContentId,
-          createdBy: user?.id || null,
         }),
       });
 
@@ -444,7 +412,7 @@ export default function MainGeneratorPage() {
           </div>
         )}
 
-        {/* 1. Header Panel */}
+        {/* Header Panel */}
         <div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-900">
@@ -460,40 +428,23 @@ export default function MainGeneratorPage() {
                   {selectedContentType === "stat" && "📊 Stats"}
                   {selectedContentType === "motivational" && "💪 Motivational"}
                   {selectedContentType === "greeting" && "👋 Greetings"}
-                  {selectedContentType === "penalty-box-philosopher" &&
-                    "🧘 Penalty Box Philosopher"}
+                  {selectedContentType === "wisdom" && "✨ Wisdom"}
                 </span>
               </div>
             )}
           </div>
           <p className="text-sm text-gray-500 leading-relaxed mt-1">
-            Universal content generator for all content types. Select a content
-            type below, load your source content, provide an AI prompt, and
-            generate any type of content from a single interface.
+            Universal content generator for all content types. Load your source
+            content, provide an AI prompt, select a content type, and generate
+            any type of content from a single interface.
           </p>
         </div>
 
-        {/* 2. Content Type Selector */}
-        <div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-2">
-            1. Select Content Type
-          </h2>
-          <p className="text-xs text-gray-500 mb-4">
-            This choice determines the kind of content you will generate and
-            save.
-          </p>
-          <ContentTypeSelector
-            selectedType={selectedContentType}
-            onTypeSelect={setSelectedContentType}
-            allowedTypes={mainGeneratorTypes}
-          />
-        </div>
-
-        {/* 3. Source Content */}
+        {/* 1. Source Content */}
         <div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-gray-900">
-              2. Load Source Content
+              1. Load Source Content
             </h2>
             <button
               onClick={() => {
@@ -528,11 +479,11 @@ export default function MainGeneratorPage() {
           </div>
         </div>
 
-        {/* 4. AI Prompt */}
+        {/* 2. AI Prompt */}
         <div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-gray-900">
-              3. Provide AI Prompt
+              2. Provide AI Prompt
             </h2>
             <button
               onClick={() => {
@@ -556,7 +507,23 @@ export default function MainGeneratorPage() {
           />
         </div>
 
-        {/* 5. Actions Panel */}
+        {/* 3. Content Type Selector */}
+        <div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-2">
+            3. Select Content Type
+          </h2>
+          <p className="text-xs text-gray-500 mb-4">
+            This choice determines the kind of content you will generate and
+            save.
+          </p>
+          <ContentTypeSelector
+            selectedType={selectedContentType}
+            onTypeSelect={setSelectedContentType}
+            allowedTypes={mainGeneratorTypes}
+          />
+        </div>
+
+        {/* 4. Actions Panel */}
         <div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-2">
             4. Generate

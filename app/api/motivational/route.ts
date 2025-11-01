@@ -6,10 +6,42 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// GET /api/motivational - Fetch motivational entries with filters
+// GET /api/motivational - Fetch motivational entries with filters or stats
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
+    const statsOnly = searchParams.get("stats") === "true";
+
+    // If stats requested, return counts by status
+    if (statsOnly) {
+      // Get all items and count by status in memory (simpler and more reliable)
+      const { data: allItems } = await supabase
+        .from("collection_motivational")
+        .select("status");
+
+      if (!allItems) {
+        return NextResponse.json({
+          success: true,
+          stats: { unpublished: 0, published: 0, archived: 0 },
+        });
+      }
+
+      const stats = {
+        unpublished: allItems.filter(
+          (item) => item.status !== "published" && item.status !== "archived",
+        ).length,
+        published: allItems.filter((item) => item.status === "published")
+          .length,
+        archived: allItems.filter((item) => item.status === "archived").length,
+      };
+
+      return NextResponse.json({
+        success: true,
+        stats,
+      });
+    }
+
+    // Regular fetch with filters
     const status = searchParams.get("status");
     const theme = searchParams.get("theme");
     const limit = parseInt(searchParams.get("limit") || "20", 10);
@@ -22,12 +54,16 @@ export async function GET(request: NextRequest) {
 
     // Apply status filters
     if (status) {
-      // Support multiple statuses separated by comma
-      const statuses = status.split(",").map((s) => s.trim());
-      if (statuses.length === 1) {
-        query = query.eq("status", statuses[0]);
-      } else {
-        query = query.in("status", statuses);
+      if (status === "unpublished") {
+        // Unpublished = anything that is NOT published and NOT archived
+        // This includes NULL, "draft", or any other status
+        query = query.or(
+          "status.is.null,and(status.not.eq.published,status.not.eq.archived)",
+        );
+      } else if (status === "published") {
+        query = query.eq("status", "published");
+      } else if (status === "archived") {
+        query = query.eq("status", "archived");
       }
     }
 

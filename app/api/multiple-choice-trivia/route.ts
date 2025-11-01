@@ -29,6 +29,34 @@ const supabaseAdmin = createClient(
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const statsOnly = searchParams.get("stats") === "true";
+
+    if (statsOnly) {
+      const { data: allItems } = await supabaseAdmin
+        .from("trivia_multiple_choice")
+        .select("status");
+
+      if (!allItems) {
+        return NextResponse.json({
+          success: true,
+          stats: { unpublished: 0, published: 0, archived: 0 },
+        });
+      }
+
+      const stats = {
+        unpublished: allItems.filter(
+          (item) => item.status !== "published" && item.status !== "archived",
+        ).length,
+        published: allItems.filter((item) => item.status === "published")
+          .length,
+        archived: allItems.filter((item) => item.status === "archived").length,
+      };
+
+      return NextResponse.json({
+        success: true,
+        stats,
+      });
+    }
 
     // Pagination
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -44,14 +72,19 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin
       .from("trivia_multiple_choice")
       .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order("created_at", { ascending: false });
 
-    // Apply filters
+    // Apply status filter
     if (status) {
-      // Support comma-separated statuses: "published,draft"
-      const statuses = status.split(",").map((s) => s.trim());
-      query = query.in("status", statuses);
+      if (status === "unpublished") {
+        query = query.or(
+          "status.is.null,and(status.not.eq.published,status.not.eq.archived)",
+        );
+      } else if (status === "published") {
+        query = query.eq("status", "published");
+      } else if (status === "archived") {
+        query = query.eq("status", "archived");
+      }
     }
 
     if (theme) {
@@ -65,6 +98,9 @@ export async function GET(request: NextRequest) {
     if (difficulty) {
       query = query.eq("difficulty", difficulty);
     }
+
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1);
 
     // Execute query
     const { data, error, count } = await query;

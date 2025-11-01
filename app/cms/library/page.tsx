@@ -273,49 +273,73 @@ export default function ContentLibraryPage() {
               </div>
             ) : items.length > 0 ? (
               <ul className="divide-y divide-gray-200">
-                {items.map((item) => (
-                  <li
-                    key={item.id}
-                    onClick={() => setSelectedItem(item)}
-                    className={clsx(
-                      "p-4 cursor-pointer hover:bg-gray-50",
-                      selectedItem?.id === item.id && "bg-indigo-50",
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h4
-                        className={clsx(
-                          "font-semibold text-sm truncate flex-1",
-                          selectedItem?.id === item.id
-                            ? "text-indigo-800"
-                            : "text-gray-900",
-                        )}
-                      >
-                        {`Item #${item.id}`}
-                      </h4>
-                      {item.used_for && item.used_for.length > 0 && (
-                        <div className="flex gap-1 flex-shrink-0">
-                          {getBadgeConfig(item.used_for).map((badge) => (
-                            <span
-                              key={badge.key}
-                              className={clsx(
-                                "inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded",
-                                badge.bgColor,
-                                badge.textColor,
-                              )}
-                              title={badge.title}
-                            >
-                              {badge.label}
-                            </span>
-                          ))}
-                        </div>
+                {items.map((item) => {
+                  // Generate title from first line or use existing title
+                  const title =
+                    item.title ||
+                    item.content_text.split("\n")[0].slice(0, 60) +
+                      (item.content_text.split("\n")[0].length > 60
+                        ? "..."
+                        : "");
+
+                  return (
+                    <li
+                      key={item.id}
+                      onClick={() => setSelectedItem(item)}
+                      className={clsx(
+                        "p-4 cursor-pointer hover:bg-gray-50",
+                        selectedItem?.id === item.id && "bg-indigo-50",
                       )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      ID: {item.id} • {item.word_count} words
-                    </p>
-                  </li>
-                ))}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4
+                            className={clsx(
+                              "font-semibold text-sm truncate",
+                              selectedItem?.id === item.id
+                                ? "text-indigo-800"
+                                : "text-gray-900",
+                            )}
+                          >
+                            {title}
+                          </h4>
+                          {/* Content Preview - First 2 lines */}
+                          <p
+                            className="text-xs text-gray-600 mt-1 line-clamp-2"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {item.content_text}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            ID: {item.id} • {item.word_count} words
+                          </p>
+                        </div>
+                        {item.used_for && item.used_for.length > 0 && (
+                          <div className="flex gap-1 flex-shrink-0">
+                            {getBadgeConfig(item.used_for).map((badge) => (
+                              <span
+                                key={badge.key}
+                                className={clsx(
+                                  "inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded",
+                                  badge.bgColor,
+                                  badge.textColor,
+                                )}
+                                title={badge.title}
+                              >
+                                {badge.label}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <div className="p-6 text-center text-gray-500">

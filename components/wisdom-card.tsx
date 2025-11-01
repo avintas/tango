@@ -1,37 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { Wisdom } from "@/lib/wisdom-types";
 
-interface StatItem {
-  id: number;
-  stat_text: string;
-  stat_value?: string | null;
-  stat_category?: string | null;
-  year?: number | null;
-  theme?: string | null;
-  category?: string | null;
-  attribution?: string | null;
-  status?: string | null;
-  used_in?: string[] | null;
-  created_at: string;
-}
-
-interface StatCardProps {
-  item: StatItem;
+interface WisdomCardProps {
+  item: Wisdom;
   onStatusChange?: (id: number, newStatus: string | null) => void;
   onDelete?: (id: number) => void;
 }
 
-export default function StatCard({
+export default function WisdomCard({
   item,
   onStatusChange,
   onDelete,
-}: StatCardProps) {
+}: WisdomCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-
-  const charCount = item.stat_text.length;
-  const wordCount = item.stat_text.split(/\s+/).filter(Boolean).length;
 
   const getStatusBadge = (status?: string | null) => {
     if (status === "published") {
@@ -57,9 +41,7 @@ export default function StatCard({
 
   const handleCopy = async () => {
     try {
-      const textToCopy = item.stat_value
-        ? `${item.stat_text}\n${item.stat_value}`
-        : item.stat_text;
+      const textToCopy = `${item.title ? item.title + "\n\n" : ""}"${item.musing}"\n\nFrom the box: ${item.from_the_box}`;
       await navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
@@ -73,7 +55,7 @@ export default function StatCard({
 
     setIsProcessing(true);
     try {
-      const response = await fetch(`/api/stats/${item.id}`, {
+      const response = await fetch(`/api/wisdom/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -95,13 +77,13 @@ export default function StatCard({
   const handleDelete = async () => {
     if (!onDelete || isProcessing) return;
 
-    if (!confirm("Are you sure you want to delete this stat?")) {
+    if (!confirm("Are you sure you want to delete this wisdom?")) {
       return;
     }
 
     setIsProcessing(true);
     try {
-      const response = await fetch(`/api/stats/${item.id}`, {
+      const response = await fetch(`/api/wisdom/${item.id}`, {
         method: "DELETE",
       });
 
@@ -125,39 +107,31 @@ export default function StatCard({
   return (
     <div className="p-4 rounded-lg bg-white border border-gray-300 hover:border-indigo-300 transition-colors">
       <div className="flex items-start gap-3">
-        <span className="text-2xl">📊</span>
+        <span className="text-2xl">💎</span>
         <div className="flex-1 min-w-0">
           {/* Status Badge */}
           <div className="mb-2">{getStatusBadge(currentStatus)}</div>
 
-          {/* Stat Text */}
-          <p className="text-sm text-gray-900 mb-2 leading-relaxed">
-            {item.stat_text}
-          </p>
-
-          {/* Stat Value */}
-          {item.stat_value && (
-            <p className="text-base font-semibold text-indigo-700 mb-2">
-              {item.stat_value}
-            </p>
+          {/* Title */}
+          {item.title && (
+            <h3 className="text-sm font-semibold text-indigo-600 mb-2">
+              {item.title}
+            </h3>
           )}
 
-          {/* Metadata Row */}
+          {/* Musing */}
+          <p className="text-sm text-gray-900 mb-2 leading-relaxed italic">
+            &quot;{item.musing}&quot;
+          </p>
+
+          {/* From the Box */}
+          <p className="text-sm text-gray-700 mb-2">
+            <span className="font-semibold">From the box:</span>{" "}
+            {item.from_the_box}
+          </p>
+
+          {/* Metadata */}
           <div className="flex items-center gap-1.5 flex-wrap text-xs text-gray-500 mb-3">
-            {item.stat_category && (
-              <>
-                <span className="text-blue-600 font-medium capitalize">
-                  {item.stat_category}
-                </span>
-                <span>•</span>
-              </>
-            )}
-            {item.year && (
-              <>
-                <span className="text-purple-600 font-medium">{item.year}</span>
-                <span>•</span>
-              </>
-            )}
             {item.theme && (
               <>
                 <span className="capitalize">{item.theme}</span>
@@ -170,24 +144,12 @@ export default function StatCard({
                 <span>•</span>
               </>
             )}
-            {item.used_in && item.used_in.length > 0 && (
-              <>
-                <span className="text-green-700 font-medium">
-                  ✓ Used {item.used_in.length}x
-                </span>
-                <span>•</span>
-              </>
-            )}
             {item.attribution && (
               <>
                 <span>{item.attribution}</span>
                 <span>•</span>
               </>
             )}
-            <span>{charCount} chars</span>
-            <span>•</span>
-            <span>{wordCount} words</span>
-            <span>•</span>
             <span>ID: {item.id}</span>
           </div>
 

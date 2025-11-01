@@ -127,7 +127,10 @@ export async function DELETE(
   try {
     const id = parseInt(params.id, 10);
 
-    const { error } = await supabase.from("wisdom").delete().eq("id", id);
+    const { error } = await supabase
+      .from("collection_wisdom")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting wisdom:", error);

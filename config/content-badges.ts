@@ -93,22 +93,6 @@ export const CONTENT_BADGES: Record<string, BadgeConfig> = {
     textColor: "text-cyan-800",
     title: "Used for Wisdom content",
   },
-  pbp: {
-    key: "pbp",
-    label: "P",
-    color: "indigo",
-    bgColor: "bg-indigo-100",
-    textColor: "text-indigo-800",
-    title: "Used for Penalty Box Philosopher content",
-  },
-  "penalty-box-philosopher": {
-    key: "penalty-box-philosopher",
-    label: "P",
-    color: "indigo",
-    bgColor: "bg-indigo-100",
-    textColor: "text-indigo-800",
-    title: "Used for Penalty Box Philosopher content",
-  },
 };
 
 /**

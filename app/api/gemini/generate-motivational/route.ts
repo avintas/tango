@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { generateMotivationalContent } from "@/lib/gemini-motivational";
-import { UniContent } from "@/lib/types";
+import { CollectionContent } from "@/lib/types";
 
 /**
- * Formats structured UniContent data for display.
- * @param data An array of UniContent objects.
+ * Formats structured CollectionContent data for display.
+ * @param data An array of CollectionContent objects.
  * @returns A formatted string.
  */
-function formatContentForDisplay(data: UniContent[]): string {
+function formatContentForDisplay(data: CollectionContent[]): string {
   if (!data || data.length === 0) {
     return "No content generated.";
   }

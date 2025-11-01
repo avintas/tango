@@ -47,12 +47,6 @@ const libraryActions = [
 
 const contentLibrariesActions = [
   {
-    id: 6,
-    name: "Archived Questions",
-    href: "/cms/trivia-questions/archived",
-    initial: "🗄️",
-  },
-  {
     id: 7,
     name: "True/False Trivia",
     href: "/cms/true-false-trivia-library",
@@ -94,32 +88,11 @@ const contentLibrariesActions = [
     href: "/cms/wisdom-library",
     initial: "🤔",
   },
-];
-
-const triviaSetsActions = [
   {
-    id: 1,
-    name: "All Sets",
-    href: "/cms/trivia-sets",
-    initial: "📋",
-  },
-  {
-    id: 2,
-    name: "Create New Set",
-    href: "/cms/trivia-sets/create",
-    initial: "🆕",
-  },
-  {
-    id: 3,
-    name: "Published",
-    href: "/cms/trivia-sets/published",
-    initial: "✅",
-  },
-  {
-    id: 4,
-    name: "Drafts",
-    href: "/cms/trivia-sets/drafts",
-    initial: "📝",
+    id: 10,
+    name: "Ingested Content Library",
+    href: "/cms/ingested-content-library",
+    initial: "📄",
   },
 ];
 
@@ -130,21 +103,9 @@ const processingActions = [
     href: "/cms/processing/main-generator",
     initial: "⚡",
   },
-  {
-    id: 1,
-    name: "Trivia Set Generator",
-    href: "/cms/processing/trivia-set-generator",
-    initial: "🧩",
-  },
 ];
 
 const managementActions = [
-  {
-    id: 1,
-    name: "Categories",
-    href: "/cms/categories",
-    initial: "🏷️",
-  },
   {
     id: 2,
     name: "Hero Collections",
@@ -260,26 +221,6 @@ export default function AppShell({
                 </div>
                 <ul role="list" className="mt-2 space-y-1">
                   {contentLibrariesActions.map((action) => (
-                    <li key={action.name}>
-                      <Link
-                        href={action.href}
-                        className="group flex gap-x-3 rounded-md p-1 text-xs font-semibold text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-                      >
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center text-sm">
-                          {action.initial}
-                        </span>
-                        <span className="truncate">{action.name}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              <li>
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
-                  Trivia Sets
-                </div>
-                <ul role="list" className="mt-2 space-y-1">
-                  {triviaSetsActions.map((action) => (
                     <li key={action.name}>
                       <Link
                         href={action.href}

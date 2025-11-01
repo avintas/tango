@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       "stat",
       "motivational",
       "greeting",
-      "penalty-box-philosopher",
+      "wisdom",
     ];
     if (!content_type || !validTypes.includes(content_type)) {
       return NextResponse.json(

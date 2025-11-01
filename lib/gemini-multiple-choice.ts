@@ -1,6 +1,6 @@
 import { gemini } from "@/lib/gemini";
 import { TriviaQuestion } from "./types"; // Assuming TriviaQuestion will be defined here or similar
-import { extractJsonObject } from "./content-helpers"; // Re-using the helper
+import { cleanJsonString } from "./content-helpers";
 
 export interface MultipleChoiceGenerationRequest {
   sourceContent: string;
@@ -36,6 +36,9 @@ export async function generateMultipleChoice(
           ],
         },
       ],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
     });
 
     const text = result.text;
@@ -43,7 +46,8 @@ export async function generateMultipleChoice(
       return { success: false, error: "Gemini returned an empty response." };
     }
 
-    const parsedResponse = extractJsonObject(text);
+    const cleanText = cleanJsonString(text);
+    const parsedResponse = JSON.parse(cleanText);
     if (!parsedResponse || !Array.isArray(parsedResponse.items)) {
       return {
         success: false,

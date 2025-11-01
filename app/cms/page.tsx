@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import {
   DocumentTextIcon,
   ChartBarIcon,
@@ -95,15 +94,6 @@ export default function DashboardPage() {
       icon: BookOpenIcon,
       color: "bg-green-500",
       description: "Available in library",
-      href: "/cms/trivia-questions",
-    },
-    {
-      name: "Archived Questions",
-      value: triviaStats.archived || 0,
-      icon: ArchiveBoxIcon,
-      color: "bg-gray-500",
-      description: "Saved for later",
-      href: "/cms/trivia-questions/archived",
     },
   ];
 
@@ -114,14 +104,6 @@ export default function DashboardPage() {
       href: "/cms/sourcing",
       icon: DocumentTextIcon,
       color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    },
-    {
-      name: "Process Trivia",
-      description: "Generate trivia questions from source content",
-      href: "/cms/processing/trivia",
-      icon: ChartBarIcon,
-      color:
-        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     },
   ];
 
@@ -144,24 +126,25 @@ export default function DashboardPage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {triviaStatCards.map((stat) => (
-            <Link href={stat.href} key={stat.name} className="block">
-              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-shadow">
-                <div className="flex items-center">
-                  <div className={`flex-shrink-0 ${stat.color} rounded-md p-3`}>
-                    <stat.icon className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
-                      {stat.name}
-                    </p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {stat.value}
-                    </p>
-                    <p className="text-xs text-gray-400">{stat.description}</p>
-                  </div>
+            <div
+              key={stat.name}
+              className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm"
+            >
+              <div className="flex items-center">
+                <div className={`flex-shrink-0 ${stat.color} rounded-md p-3`}>
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">
+                    {stat.name}
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs text-gray-400">{stat.description}</p>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>

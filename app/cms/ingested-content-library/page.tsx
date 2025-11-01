@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import clsx from "clsx";
-import { WhoAmITrivia } from "@/lib/who-am-i-trivia-types";
-import WhoAmITriviaCard from "@/components/who-am-i-trivia-card";
+import { IngestedContent } from "@/lib/supabase";
+import IngestedContentCard from "@/components/ingested-content-card";
 
 type StatusFilter = "unpublished" | "published" | "archived";
 
-export default function WhoAmITriviaLibraryPage() {
-  const [items, setItems] = useState<WhoAmITrivia[]>([]);
+export default function IngestedContentLibraryPage() {
+  const [items, setItems] = useState<IngestedContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,7 +24,7 @@ export default function WhoAmITriviaLibraryPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const response = await fetch(`/api/who-am-i-trivia?stats=true`);
+      const response = await fetch(`/api/content-source?stats=true`);
       const result = await response.json();
       if (result.success && result.stats) {
         setStats(result.stats);
@@ -39,7 +39,7 @@ export default function WhoAmITriviaLibraryPage() {
       setLoading(true);
       const offset = (currentPage - 1) * limit;
       const response = await fetch(
-        `/api/who-am-i-trivia?status=${statusFilter}&limit=${limit}&offset=${offset}`,
+        `/api/content-source?status=${statusFilter}&limit=${limit}&offset=${offset}`,
       );
       const result = await response.json();
 
@@ -48,7 +48,7 @@ export default function WhoAmITriviaLibraryPage() {
         setTotal(result.count || 0);
       }
     } catch (error) {
-      console.error("Failed to fetch Who Am I trivia:", error);
+      console.error("Failed to fetch ingested content:", error);
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,7 @@ export default function WhoAmITriviaLibraryPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            🤔 Who Am I Trivia Library
+            📄 Ingested Content Library
           </h1>
           <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
             <span>
@@ -177,13 +177,13 @@ export default function WhoAmITriviaLibraryPage() {
               {items.length === 0 ? (
                 <div className="p-8 text-center bg-white border border-gray-200 rounded-lg">
                   <p className="text-gray-500">
-                    No {getStatusLabel(statusFilter).toLowerCase()} Who Am I
-                    trivia questions found.
+                    No {getStatusLabel(statusFilter).toLowerCase()} ingested
+                    content found.
                   </p>
                 </div>
               ) : (
                 items.map((item) => (
-                  <WhoAmITriviaCard
+                  <IngestedContentCard
                     key={item.id}
                     item={item}
                     onStatusChange={handleStatusChange}

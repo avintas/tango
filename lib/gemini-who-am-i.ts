@@ -1,6 +1,6 @@
 import { gemini } from "@/lib/gemini";
 import { TriviaQuestion } from "./types";
-import { extractJsonObject } from "./content-helpers";
+import { cleanJsonString } from "./content-helpers";
 
 export interface WhoAmIGenerationRequest {
   sourceContent: string;
@@ -36,6 +36,9 @@ export async function generateWhoAmI(
           ],
         },
       ],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
     });
 
     const text = result.text;
@@ -43,7 +46,8 @@ export async function generateWhoAmI(
       return { success: false, error: "Gemini returned an empty response." };
     }
 
-    const parsedResponse = extractJsonObject(text);
+    const cleanText = cleanJsonString(text);
+    const parsedResponse = JSON.parse(cleanText);
     if (!parsedResponse || !Array.isArray(parsedResponse.items)) {
       return {
         success: false,

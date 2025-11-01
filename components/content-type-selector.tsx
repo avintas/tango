@@ -30,7 +30,6 @@ export const typeIcons: Record<ContentType, any> = {
   wisdom: SparklesIcon,
   motivational: SunIcon,
   greeting: ChatBubbleBottomCenterTextIcon,
-  "penalty-box-philosopher": AcademicCapIcon,
 };
 
 export const typeNames: Record<ContentType, string> = {
@@ -41,7 +40,6 @@ export const typeNames: Record<ContentType, string> = {
   wisdom: "Wisdom",
   motivational: "Motivational",
   greeting: "Greetings",
-  "penalty-box-philosopher": "Penalty Box Philosopher",
 };
 
 export default function ContentTypeSelector({
