@@ -9,10 +9,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // PUT /api/wisdom/[id] - Update wisdom entry
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     const body = await request.json();
 
     // Build update object with only provided fields
@@ -70,10 +71,11 @@ export async function PUT(
 // PATCH /api/wisdom/[id] - Partially update wisdom (archive/status changes)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     const body = await request.json();
 
     const updateData: Record<string, any> = {
@@ -122,10 +124,11 @@ export async function PATCH(
 // DELETE /api/wisdom/[id] - Delete wisdom entry
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
 
     const { error } = await supabase
       .from("collection_wisdom")

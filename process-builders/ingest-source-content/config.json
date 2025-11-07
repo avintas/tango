@@ -1,0 +1,58 @@
+{
+  "id": "ingest-source-content",
+  "name": "Ingest Source Content",
+  "description": "Processes source content through workflow with AI-powered metadata extraction and enrichment",
+  "version": "1.0.0",
+  "enabled": true,
+  "tasks": [
+    {
+      "id": "process-content",
+      "timeout": 10000,
+      "retryable": false
+    },
+    {
+      "id": "extract-metadata",
+      "timeout": 30000,
+      "retryable": true,
+      "maxRetries": 2,
+      "retryDelay": 2000
+    },
+    {
+      "id": "generate-summary",
+      "timeout": 30000,
+      "retryable": true,
+      "maxRetries": 2,
+      "retryDelay": 2000
+    },
+    {
+      "id": "generate-title-key-phrases",
+      "timeout": 30000,
+      "retryable": true,
+      "maxRetries": 2,
+      "retryDelay": 2000
+    },
+    {
+      "id": "validate-completeness",
+      "timeout": 5000,
+      "retryable": false
+    },
+    {
+      "id": "create-record",
+      "timeout": 30000,
+      "retryable": true,
+      "maxRetries": 2,
+      "retryDelay": 2000
+    }
+  ],
+  "requiredRules": ["contentText"],
+  "optionalRules": ["title", "skipAIExtraction"],
+  "defaults": {
+    "skipAIExtraction": false
+  },
+  "limits": {
+    "contentText": {
+      "min": 10,
+      "max": 50000
+    }
+  }
+}

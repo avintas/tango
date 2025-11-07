@@ -1,4 +1,5 @@
-import CategoryForm from "@/components/category-form";
+// TODO: Create CategoryForm component
+// import CategoryForm from "@/components/category-form";
 
 export default function CreateCategoryPage() {
   return (
@@ -14,7 +15,10 @@ export default function CreateCategoryPage() {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <CategoryForm />
+        <p className="text-gray-500">
+          Category form component not yet implemented.
+        </p>
+        {/* <CategoryForm /> */}
       </div>
     </div>
   );

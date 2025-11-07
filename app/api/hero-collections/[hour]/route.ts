@@ -7,10 +7,11 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { hour: string } },
+  { params }: { params: Promise<{ hour: string }> },
 ) {
   try {
-    const collectionId = parseInt(params.hour, 10); // Keep param name for routing
+    const resolvedParams = await params;
+    const collectionId = parseInt(resolvedParams.hour, 10); // Keep param name for routing
 
     // Validate ID
     if (isNaN(collectionId)) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateStatsContent } from "@/lib/gemini-stats";
+import { generateStatsContent } from "@/gemini";
 import { CollectionContent } from "@/lib/types";
 
 /**

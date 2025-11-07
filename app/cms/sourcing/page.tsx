@@ -1,562 +1,606 @@
 "use client";
 
-import { useReducer } from "react";
-import { processText } from "@/lib/text-processing";
+import { useState } from "react";
+import { ingestSourceContentAction } from "@/process-builders/ingest-source-content/lib/actions";
+import type {
+  ProcessBuilderGoal,
+  ProcessBuilderRules,
+  ProcessBuilderResult,
+} from "@/process-builders/core/types";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Heading } from "@/components/ui/heading";
 import { Alert } from "@/components/ui/alert";
 import {
-  ArrowDownTrayIcon,
-  DocumentDuplicateIcon,
-  TrashIcon,
   ClipboardDocumentIcon,
   SparklesIcon,
-  CircleStackIcon,
+  ArrowPathIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
-
-// State interface
-interface SourcingState {
-  rawContent: string;
-  processedContent: string;
-  isProcessing: boolean;
-  isSaving: boolean;
-  saveStatus: { type: "success" | "error" | "info"; message: string };
-  copyStatus: { type: "success" | "error" | "info"; message: string };
-}
-
-// Action types
-type SourcingAction =
-  | { type: "SET_RAW_CONTENT"; payload: string }
-  | { type: "SET_PROCESSED_CONTENT"; payload: string }
-  | { type: "SET_PROCESSING"; payload: boolean }
-  | { type: "SET_SAVING"; payload: boolean }
-  | {
-      type: "SET_SAVE_STATUS";
-      payload: { type: "success" | "error" | "info"; message: string };
-    }
-  | {
-      type: "SET_COPY_STATUS";
-      payload: { type: "success" | "error" | "info"; message: string };
-    }
-  | { type: "CLEAR_ALL_STATES" }
-  | { type: "CLEAR_STATUS_MESSAGES" };
-
-// Initial state
-const initialState: SourcingState = {
-  rawContent: "",
-  processedContent: "",
-  isProcessing: false,
-  isSaving: false,
-  saveStatus: { type: "info", message: "" },
-  copyStatus: { type: "info", message: "" },
-};
-
-// Reducer function
-function sourcingReducer(
-  state: SourcingState,
-  action: SourcingAction,
-): SourcingState {
-  switch (action.type) {
-    case "SET_RAW_CONTENT":
-      return { ...state, rawContent: action.payload };
-    case "SET_PROCESSED_CONTENT":
-      return { ...state, processedContent: action.payload };
-    case "SET_PROCESSING":
-      return { ...state, isProcessing: action.payload };
-    case "SET_SAVING":
-      return { ...state, isSaving: action.payload };
-    case "SET_SAVE_STATUS":
-      return { ...state, saveStatus: action.payload };
-    case "SET_COPY_STATUS":
-      return { ...state, copyStatus: action.payload };
-    case "CLEAR_ALL_STATES":
-      return initialState;
-    case "CLEAR_STATUS_MESSAGES":
-      return {
-        ...state,
-        saveStatus: { type: "info", message: "" },
-        copyStatus: { type: "info", message: "" },
-      };
-    default:
-      return state;
-  }
-}
+import type { SourceContentIngested } from "@/lib/supabase";
+import { processText } from "@/lib/text-processing";
 
 export default function SourcingPage() {
-  const [state, dispatch] = useReducer(sourcingReducer, initialState);
-
-  // Helper function to get comprehensive content statistics
-  const getContentStats = (text: string) => {
-    if (!text.trim()) {
-      return {
-        words: 0,
-        chars: 0,
-        sentences: 0,
-        paragraphs: 0,
-        readingTime: 0,
-        avgWordsPerSentence: 0,
-      };
-    }
-
-    const words = text
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0).length;
-    const chars = text.length;
-    const sentences = text
-      .split(/[.!?]+/)
-      .filter((s) => s.trim().length > 0).length;
-    const paragraphs = text
-      .split(/\n\n+/)
-      .filter((p) => p.trim().length > 0).length;
-    const readingTime = Math.ceil(words / 200); // Average reading speed
-    const avgWordsPerSentence =
-      sentences > 0 ? Math.round((words / sentences) * 10) / 10 : 0;
-
-    return {
-      words,
-      chars,
-      sentences,
-      paragraphs,
-      readingTime,
-      avgWordsPerSentence,
-    };
-  };
-
-  // Helper function to count words (for backward compatibility)
-  const getWordCount = (text: string) => {
-    return getContentStats(text).words;
-  };
-
-  // Helper function to clear all states
-  const clearAllStates = () => {
-    dispatch({ type: "CLEAR_ALL_STATES" });
-  };
-
-  const handleProcessContent = async () => {
-    if (!state.rawContent.trim()) {
-      dispatch({
-        type: "SET_SAVE_STATUS",
-        payload: { type: "error", message: "There is no content to process." },
-      });
-      return;
-    }
-    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
-    dispatch({ type: "SET_PROCESSING", payload: true });
-    dispatch({
-      type: "SET_SAVE_STATUS",
-      payload: { type: "info", message: "✨ Processing your content..." },
-    });
-
-    try {
-      const result = await processText(state.rawContent);
-      dispatch({
-        type: "SET_PROCESSED_CONTENT",
-        payload: result.processedText,
-      });
-      dispatch({
-        type: "SET_SAVE_STATUS",
-        payload: {
-          type: "success",
-          message: "✅ Content processed and ready!",
-        },
-      });
-    } catch (error) {
-      dispatch({
-        type: "SET_SAVE_STATUS",
-        payload: {
-          type: "error",
-          message: `❌ Processing error: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
-        },
-      });
-    } finally {
-      dispatch({ type: "SET_PROCESSING", payload: false });
-    }
-  };
+  const [contentText, setContentText] = useState("");
+  const [processedText, setProcessedText] = useState("");
+  const [isProcessingText, setIsProcessingText] = useState(false);
+  const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<ProcessBuilderResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [ingestedContent, setIngestedContent] =
+    useState<SourceContentIngested | null>(null);
 
   const handlePaste = async () => {
     try {
       const clipboardText = await navigator.clipboard.readText();
       if (clipboardText.trim()) {
-        dispatch({ type: "SET_RAW_CONTENT", payload: clipboardText });
-        dispatch({ type: "CLEAR_STATUS_MESSAGES" });
-        dispatch({
-          type: "SET_COPY_STATUS",
-          payload: { type: "success", message: "Pasted from clipboard!" },
-        });
-        setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+        setContentText(clipboardText);
+        setProcessedText(""); // Clear processed text when new content is pasted
       }
-    } catch (error) {
-      dispatch({
-        type: "SET_COPY_STATUS",
-        payload: {
-          type: "error",
-          message: "Failed to read from clipboard.",
-        },
-      });
-      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+    } catch (err) {
+      console.error("Failed to read clipboard:", err);
     }
   };
 
-  const handleSave = async () => {
-    if (!state.processedContent?.trim()) {
-      dispatch({
-        type: "SET_SAVE_STATUS",
-        payload: {
-          type: "error",
-          message: "❌ Please process content before saving.",
-        },
-      });
+  const handleClear = () => {
+    setContentText("");
+    setProcessedText("");
+    setTitle("");
+    setResult(null);
+    setError(null);
+    setIngestedContent(null);
+  };
+
+  const handleProcessText = async () => {
+    if (!contentText.trim()) {
+      setError("Please enter content to process");
       return;
     }
 
-    // Clear previous status messages
-    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
-
-    dispatch({ type: "SET_SAVING", payload: true });
-    dispatch({
-      type: "SET_SAVE_STATUS",
-      payload: { type: "info", message: "Saving to Supabase..." },
-    });
+    setIsProcessingText(true);
+    setError(null);
+    setProcessedText("");
 
     try {
-      const wordCount = getWordCount(state.processedContent);
-
-      const response = await fetch("/api/content-source", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content_text: state.processedContent.trim(),
-          word_count: wordCount,
-          char_count: state.processedContent.length,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        dispatch({
-          type: "SET_SAVE_STATUS",
-          payload: {
-            type: "success",
-            message: "✅ Content saved successfully!",
-          },
-        });
-      } else {
-        dispatch({
-          type: "SET_SAVE_STATUS",
-          payload: {
-            type: "error",
-            message: `❌ Save failed: ${result.error || "Unknown error"}`,
-          },
-        });
-      }
-    } catch (error) {
-      dispatch({
-        type: "SET_SAVE_STATUS",
-        payload: {
-          type: "error",
-          message: `❌ Error: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
-        },
-      });
+      const processingResult = await processText(contentText);
+      setProcessedText(processingResult.processedText);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to process text");
     } finally {
-      dispatch({ type: "SET_SAVING", payload: false });
+      setIsProcessingText(false);
     }
   };
 
-  const handleCopy = async () => {
-    if (!state.processedContent) return;
-
-    // Clear previous status messages
-    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
-
-    try {
-      await navigator.clipboard.writeText(state.processedContent);
-      dispatch({
-        type: "SET_COPY_STATUS",
-        payload: { type: "success", message: "✅ Copied to clipboard!" },
-      });
-      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
-    } catch (error) {
-      dispatch({
-        type: "SET_COPY_STATUS",
-        payload: { type: "error", message: "❌ Failed to copy" },
-      });
-      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
-    }
-  };
-
-  const handleDownloadMarkdown = () => {
-    if (!state.processedContent) return;
-
-    // Clear previous status messages
-    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setResult(null);
+    setError(null);
+    setIngestedContent(null);
 
     try {
-      const blob = new Blob([state.processedContent], {
-        type: "text/markdown",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `processed-content-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      dispatch({
-        type: "SET_COPY_STATUS",
-        payload: { type: "success", message: "📄 Downloaded as Markdown!" },
-      });
-      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
-    } catch (error) {
-      dispatch({
-        type: "SET_COPY_STATUS",
-        payload: { type: "error", message: "❌ Download failed" },
-      });
-      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
-    }
-  };
+      const processGoal: ProcessBuilderGoal = {
+        text: "Ingest source content with AI-powered metadata extraction",
+      };
 
-  const handleDownloadJSON = () => {
-    if (!state.processedContent) return;
-
-    // Clear previous status messages
-    dispatch({ type: "CLEAR_STATUS_MESSAGES" });
-
-    try {
-      const stats = getContentStats(state.processedContent);
-      const jsonData = {
-        content: state.processedContent,
-        statistics: stats,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          source: "Content Sourcing Tool",
-          version: "1.0",
+      const rules: ProcessBuilderRules = {
+        contentText: {
+          key: "contentText",
+          value: (processedText || contentText).trim(),
+          type: "string",
+        },
+        isAlreadyProcessed: {
+          key: "isAlreadyProcessed",
+          value: !!processedText, // Set to true if we're using pre-processed text
+          type: "boolean",
         },
       };
 
-      const blob = new Blob([JSON.stringify(jsonData, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `processed-content-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      dispatch({
-        type: "SET_COPY_STATUS",
-        payload: { type: "success", message: "📄 Downloaded as JSON!" },
-      });
-      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
-    } catch (error) {
-      dispatch({
-        type: "SET_COPY_STATUS",
-        payload: { type: "error", message: "❌ Download failed" },
-      });
-      setTimeout(() => dispatch({ type: "CLEAR_STATUS_MESSAGES" }), 2000);
+      if (title.trim()) {
+        rules.title = {
+          key: "title",
+          value: title.trim(),
+          type: "string",
+        };
+      }
+
+      const processResult = await ingestSourceContentAction(processGoal, rules);
+
+      setResult(processResult);
+
+      // Extract ingested content from final result
+      if (processResult.status === "success" && processResult.finalResult) {
+        const finalData = processResult.finalResult as {
+          record?: SourceContentIngested;
+        };
+        if (finalData.record) {
+          setIngestedContent(finalData.record);
+        }
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  const stats = state.processedContent
-    ? getContentStats(state.processedContent)
-    : getContentStats("");
+  const getWordCount = (text: string) => {
+    if (!text.trim()) return 0;
+    return text
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
+  };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6 space-y-8">
-      <Heading>Content Sourcing</Heading>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <Heading level={1}>Source Content Ingestion</Heading>
+      </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Input and Processing */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Source Content
-              </h3>
-              <Button variant="ghost" onClick={handlePaste}>
-                <ClipboardDocumentIcon className="h-5 w-5 mr-2" />
-                Paste from Clipboard
+      <p className="text-gray-600">
+        Process source content through AI-powered workflow to extract metadata,
+        generate summaries, and create enriched content records.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Content Input */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label
+              htmlFor="contentText"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Source Content *
+            </label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handlePaste}
+                className="text-sm"
+                disabled={isProcessingText || loading}
+              >
+                <ClipboardDocumentIcon className="h-4 w-4 mr-1" />
+                Paste
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleClear}
+                className="text-sm"
+                disabled={
+                  isProcessingText ||
+                  loading ||
+                  (!contentText.trim() && !processedText.trim())
+                }
+              >
+                <XMarkIcon className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleProcessText}
+                disabled={isProcessingText || loading || !contentText.trim()}
+                className="text-sm"
+              >
+                <ArrowPathIcon
+                  className={`h-4 w-4 mr-1 ${isProcessingText ? "animate-spin" : ""}`}
+                />
+                {isProcessingText ? "Processing..." : "Process Text"}
+              </Button>
+            </div>
+          </div>
+          <Textarea
+            id="contentText"
+            value={contentText}
+            onChange={(e) => {
+              setContentText(e.target.value);
+              setProcessedText(""); // Clear processed text when content changes
+            }}
+            placeholder="Paste or type your source content here..."
+            rows={12}
+            required
+            disabled={loading || isProcessingText}
+            className="font-mono text-sm"
+          />
+          <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+            <span>{getWordCount(contentText)} words</span>
+            <span>{contentText.length} characters</span>
+          </div>
+        </div>
+
+        {/* Processed Text Display */}
+        {processedText && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Processed Content (Ready for Ingestion)
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setContentText(processedText);
+                  setProcessedText("");
+                }}
+                className="text-sm"
+                disabled={loading}
+              >
+                Use Processed Text
               </Button>
             </div>
             <Textarea
-              name="rawContent"
-              placeholder="Paste or type your raw content here..."
-              value={state.rawContent}
-              onChange={(e) =>
-                dispatch({ type: "SET_RAW_CONTENT", payload: e.target.value })
-              }
-              className="min-h-[250px] font-mono text-sm"
+              value={processedText}
+              readOnly
+              rows={12}
+              className="font-mono text-sm bg-gray-50 border-green-300"
             />
-            <div className="mt-4 flex justify-end">
-              <Button
-                onClick={handleProcessContent}
-                disabled={state.isProcessing || !state.rawContent}
-                variant="primary"
-              >
+            <div className="mt-2 flex items-center gap-4 text-sm text-green-600">
+              <span>✓ Processed: {getWordCount(processedText)} words</span>
+              <span>{processedText.length} characters</span>
+            </div>
+          </div>
+        )}
+
+        {/* Optional Title */}
+        <div>
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
+            Title (Optional)
+          </label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Leave empty to auto-generate"
+            disabled={loading}
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            If provided, this title will be used instead of AI-generated title
+          </p>
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex gap-4">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={
+              loading ||
+              isProcessingText ||
+              (!contentText.trim() && !processedText.trim())
+            }
+          >
+            {loading ? (
+              <>
+                <SparklesIcon className="h-5 w-5 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
                 <SparklesIcon className="h-5 w-5 mr-2" />
-                {state.isProcessing ? "Processing..." : "Process Content"}
-              </Button>
-            </div>
-          </div>
+                Ingest Content
+              </>
+            )}
+          </Button>
         </div>
+      </form>
 
-        {/* Right Column: Actions and Stats */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Actions
-            </h3>
-            <div className="space-y-3">
-              <Button
-                onClick={handleSave}
-                disabled={state.isSaving || !state.processedContent}
-                className="w-full"
-                variant="primary"
-              >
-                <CircleStackIcon className="h-5 w-5 mr-2" />
-                {state.isSaving ? "Saving..." : "Save to Library"}
-              </Button>
-              <Button
-                onClick={handleCopy}
-                disabled={!state.processedContent}
-                className="w-full"
-                variant="outline"
-              >
-                <DocumentDuplicateIcon className="h-5 w-5 mr-2" />
-                Copy
-              </Button>
-              <Button
-                onClick={handleDownloadMarkdown}
-                disabled={!state.processedContent}
-                className="w-full"
-                variant="outline"
-              >
-                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-                Download MD
-              </Button>
-              <Button
-                onClick={handleDownloadJSON}
-                disabled={!state.processedContent}
-                className="w-full"
-                variant="outline"
-              >
-                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-                Download JSON
-              </Button>
-              <div className="pt-2">
-                <Button
-                  onClick={clearAllStates}
-                  disabled={
-                    !state.rawContent &&
-                    !state.processedContent &&
-                    !state.isProcessing &&
-                    !state.isSaving
-                  }
-                  className="w-full"
-                  variant="danger"
-                >
-                  <TrashIcon className="h-5 w-5 mr-2" />
-                  Clear All
-                </Button>
-              </div>
+      {/* Error Display */}
+      {error && <Alert type="error" message={error} />}
+
+      {/* Result Display */}
+      {result && (
+        <div className="mt-6 space-y-4">
+          {/* Success/Error Banner */}
+          {result.status === "success" && (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-800 font-semibold text-lg">
+                ✓ Content Ingested Successfully!
+              </p>
+              {ingestedContent && (
+                <p className="text-sm text-green-700 mt-1">
+                  Record ID: {ingestedContent.id} | Status:{" "}
+                  {ingestedContent.ingestion_status}
+                </p>
+              )}
             </div>
-          </div>
+          )}
 
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Statistics
-            </h3>
-            <dl className="divide-y divide-gray-100">
-              <div className="px-1 py-2 grid grid-cols-3 gap-4">
-                <dt className="text-sm font-medium text-gray-900">Words</dt>
-                <dd className="text-sm text-gray-700 col-span-2 text-right">
-                  {stats.words}
-                </dd>
-              </div>
-              <div className="px-1 py-2 grid grid-cols-3 gap-4">
-                <dt className="text-sm font-medium text-gray-900">
-                  Characters
-                </dt>
-                <dd className="text-sm text-gray-700 col-span-2 text-right">
-                  {stats.chars}
-                </dd>
-              </div>
-              <div className="px-1 py-2 grid grid-cols-3 gap-4">
-                <dt className="text-sm font-medium text-gray-900">Sentences</dt>
-                <dd className="text-sm text-gray-700 col-span-2 text-right">
-                  {stats.sentences}
-                </dd>
-              </div>
-              <div className="px-1 py-2 grid grid-cols-3 gap-4">
-                <dt className="text-sm font-medium text-gray-900">
-                  Paragraphs
-                </dt>
-                <dd className="text-sm text-gray-700 col-span-2 text-right">
-                  {stats.paragraphs}
-                </dd>
-              </div>
-              <div className="px-1 py-2 grid grid-cols-3 gap-4">
-                <dt className="text-sm font-medium text-gray-900">
-                  Reading Time
-                </dt>
-                <dd className="text-sm text-gray-700 col-span-2 text-right">
-                  ~{stats.readingTime} min
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-      </div>
-
-      {/* Status Messages */}
-      {(state.saveStatus.message || state.copyStatus.message) && (
-        <div className="space-y-3 max-w-2xl mx-auto">
-          {state.saveStatus.message && (
+          {result.status === "error" && (
             <Alert
-              type={state.saveStatus.type}
-              message={state.saveStatus.message}
+              type="error"
+              message="Failed to ingest content. See details below."
             />
           )}
-          {state.copyStatus.message && (
-            <Alert
-              type={state.copyStatus.type}
-              message={state.copyStatus.message}
-            />
-          )}
+
+          {/* Execution Summary */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-4 py-3 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Workflow Execution Summary
+              </h3>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  <p className="font-medium text-gray-900">
+                    {result.status.toUpperCase()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Execution Time</p>
+                  <p className="font-medium text-gray-900">
+                    {result.executionTime}ms
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Process</p>
+                  <p className="font-medium text-gray-900">
+                    {result.processName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Tasks Executed</p>
+                  <p className="font-medium text-gray-900">
+                    {result.results.length} of 6
+                  </p>
+                </div>
+              </div>
+
+              {/* Task Details */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">
+                  Task Execution Log
+                </h4>
+                <div className="space-y-3">
+                  {result.results.map((taskResult, idx) => {
+                    const taskProgress = result.taskProgress[idx];
+                    const isSuccess = taskResult.success;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-lg border ${
+                          isSuccess
+                            ? "bg-green-50 border-green-200"
+                            : "bg-red-50 border-red-200"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">
+                              {isSuccess ? "✓" : "✗"} Task {idx + 1}:{" "}
+                              {taskProgress?.taskName || `Task ${idx + 1}`}
+                            </p>
+
+                            {/* Task metadata */}
+                            {taskResult.metadata &&
+                              Object.keys(taskResult.metadata).length > 0 && (
+                                <div className="mt-2 text-sm text-gray-600 space-y-1">
+                                  {Object.entries(taskResult.metadata).map(
+                                    ([key, value]) => (
+                                      <div key={key} className="flex gap-2">
+                                        <span className="font-medium capitalize">
+                                          {key
+                                            .replace(/([A-Z])/g, " $1")
+                                            .trim()}
+                                          :
+                                        </span>
+                                        <span>
+                                          {typeof value === "object"
+                                            ? JSON.stringify(value)
+                                            : String(value)}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              )}
+
+                            {/* Task errors */}
+                            {taskResult.errors &&
+                              taskResult.errors.length > 0 && (
+                                <div className="mt-2">
+                                  {taskResult.errors.map((err, errIdx) => (
+                                    <p
+                                      key={errIdx}
+                                      className="text-sm text-red-600"
+                                    >
+                                      {err.code}: {err.message}
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
+
+                            {/* Task warnings */}
+                            {taskResult.warnings &&
+                              taskResult.warnings.length > 0 && (
+                                <div className="mt-2">
+                                  {taskResult.warnings.map(
+                                    (warning, warnIdx) => (
+                                      <p
+                                        key={warnIdx}
+                                        className="text-sm text-yellow-600"
+                                      >
+                                        ⚠️ {warning}
+                                      </p>
+                                    ),
+                                  )}
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Ingested Content Details */}
+              {result.status === "success" && ingestedContent && (
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">
+                    Ingested Content Details
+                  </h4>
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+                    {/* Basic Info */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">ID</p>
+                        <p className="font-medium text-gray-900">
+                          {ingestedContent.id}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Theme</p>
+                        <p className="font-medium text-gray-900">
+                          {ingestedContent.theme}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Category</p>
+                        <p className="font-medium text-gray-900">
+                          {ingestedContent.category || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Status</p>
+                        <p className="font-medium text-gray-900">
+                          {ingestedContent.ingestion_status}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    {ingestedContent.title && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Title</p>
+                        <p className="font-medium text-gray-900">
+                          {ingestedContent.title}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Summary */}
+                    {ingestedContent.summary && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Summary</p>
+                        <p className="text-gray-900">
+                          {ingestedContent.summary}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Tags */}
+                    {ingestedContent.tags &&
+                      ingestedContent.tags.length > 0 && (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-2">Tags</p>
+                          <div className="flex flex-wrap gap-2">
+                            {ingestedContent.tags.map((tag, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Key Phrases */}
+                    {ingestedContent.key_phrases &&
+                      ingestedContent.key_phrases.length > 0 && (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-2">
+                            Key Phrases
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {ingestedContent.key_phrases.map((phrase, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs"
+                              >
+                                {phrase}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-4 pt-3 border-t border-blue-300">
+                      <div>
+                        <p className="text-sm text-gray-600">Word Count</p>
+                        <p className="font-medium text-gray-900">
+                          {ingestedContent.word_count || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Character Count</p>
+                        <p className="font-medium text-gray-900">
+                          {ingestedContent.char_count || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Created</p>
+                        <p className="font-medium text-gray-900">
+                          {new Date(
+                            ingestedContent.created_at,
+                          ).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Overall Errors */}
+              {result.errors && result.errors.length > 0 && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <h4 className="font-medium text-red-800 mb-2">
+                    Overall Errors
+                  </h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    {result.errors.map((err, idx) => (
+                      <li key={idx} className="text-red-700 text-sm">
+                        <strong>{err.code}:</strong> {err.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Overall Warnings */}
+              {result.warnings && result.warnings.length > 0 && (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h4 className="font-medium text-yellow-800 mb-2">Warnings</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    {result.warnings.map((warning, idx) => (
+                      <li key={idx} className="text-yellow-700 text-sm">
+                        {warning}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Processed Content Display */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Processed Output
-        </h3>
-        <div
-          className={`w-full rounded-md border p-4 text-sm font-mono whitespace-pre-wrap break-words min-h-[200px] ${
-            state.processedContent
-              ? "border-green-300 bg-green-50"
-              : "border-gray-300 bg-gray-50"
-          }`}
-        >
-          {state.processedContent || (
-            <span className="text-gray-400 italic">
-              Processed content will appear here...
-            </span>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

@@ -5,13 +5,13 @@ import type { WhoAmITriviaUpdateInput } from "@/lib/who-am-i-trivia-types";
 // GET /api/who-am-i-trivia/[id] - Get single Who Am I question
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { data, error } = await supabaseAdmin
       .from("trivia_who_am_i")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", (await params).id)
       .single();
 
     if (error) {
@@ -42,7 +42,7 @@ export async function GET(
 // PUT /api/who-am-i-trivia/[id] - Update Who Am I question
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const body: WhoAmITriviaUpdateInput = await request.json();
@@ -62,7 +62,7 @@ export async function PUT(
         display_order: body.display_order,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", (await params).id)
       .select()
       .single();
 
@@ -94,7 +94,7 @@ export async function PUT(
 // PATCH /api/who-am-i-trivia/[id] - Partial update (status changes, etc.)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const body: Partial<WhoAmITriviaUpdateInput> = await request.json();
@@ -115,7 +115,7 @@ export async function PATCH(
     const { data, error } = await supabaseAdmin
       .from("trivia_who_am_i")
       .update(updateData)
-      .eq("id", params.id)
+      .eq("id", (await params).id)
       .select()
       .single();
 
@@ -147,13 +147,13 @@ export async function PATCH(
 // DELETE /api/who-am-i-trivia/[id] - Delete Who Am I question
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { error } = await supabaseAdmin
       .from("trivia_who_am_i")
       .delete()
-      .eq("id", params.id);
+      .eq("id", (await params).id);
 
     if (error) {
       console.error("Error deleting Who Am I question:", error);

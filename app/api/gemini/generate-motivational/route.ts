@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateMotivationalContent } from "@/lib/gemini-motivational";
+import { generateMotivationalContent } from "@/gemini";
 import { CollectionContent } from "@/lib/types";
 
 /**

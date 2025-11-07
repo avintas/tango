@@ -1,0 +1,59 @@
+{
+  "build-trivia-set": {
+    "id": "build-trivia-set",
+    "name": "Build Trivia Set",
+    "description": "Creates a curated trivia set from existing questions",
+    "version": "1.0.0",
+    "tasks": [
+      "query-questions",
+      "select-balance",
+      "generate-metadata",
+      "assemble-data",
+      "create-record",
+      "validate-finalize"
+    ],
+    "requiredRules": ["questionTypes", "questionCount"],
+    "optionalRules": [
+      "distributionStrategy",
+      "theme",
+      "cooldownDays",
+      "allowPartialSets"
+    ],
+    "defaults": {
+      "distributionStrategy": "weighted",
+      "cooldownDays": 30,
+      "allowPartialSets": false
+    },
+    "limits": {
+      "questionCount": {
+        "min": 1,
+        "max": 100
+      }
+    }
+  },
+  "ingest-source-content": {
+    "id": "ingest-source-content",
+    "name": "Ingest Source Content",
+    "description": "Processes source content through workflow with AI-powered metadata extraction and enrichment",
+    "version": "1.0.0",
+    "tasks": [
+      "process-content",
+      "extract-metadata",
+      "generate-summary",
+      "generate-title-key-phrases",
+      "validate-completeness",
+      "create-record"
+    ],
+    "requiredRules": ["contentText"],
+    "optionalRules": ["title", "skipAIExtraction"],
+    "defaults": {
+      "skipAIExtraction": false
+    },
+    "limits": {
+      "contentText": {
+        "min": 10,
+        "max": 50000
+      }
+    }
+  }
+}

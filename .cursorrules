@@ -1,7 +1,7 @@
 # Tango Project - Cursor Rules
 
 ## Project Overview
-- Next.js 14.2.33 with App Router
+- Next.js 15.5.2 with App Router
 - TypeScript with strict mode
 - Tailwind CSS for styling (pure Tailwind, no UI frameworks)
 - Custom UI components in `/components/ui`

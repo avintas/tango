@@ -103,16 +103,36 @@ const processingActions = [
     href: "/cms/processing/main-generator",
     initial: "⚡",
   },
-];
-
-const managementActions = [
   {
-    id: 2,
-    name: "Hero Collections",
-    href: "/cms/hero-collections",
-    initial: "🌟",
+    id: 1,
+    name: "Build Trivia Set",
+    href: "/cms/process-builders/build-trivia-set",
+    initial: "🔧",
   },
 ];
+
+const triviaSetsActions = [
+  {
+    id: 1,
+    name: "Who Am I Sets",
+    href: "/cms/trivia-sets-who-am-i-library",
+    initial: "🎭",
+  },
+  {
+    id: 2,
+    name: "Multiple Choice Sets",
+    href: "/cms/trivia-sets-multiple-choice-library",
+    initial: "📋",
+  },
+  {
+    id: 3,
+    name: "True/False Sets",
+    href: "/cms/trivia-sets-true-false-library",
+    initial: "⚖️",
+  },
+];
+
+const managementActions: any[] = [];
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -237,10 +257,10 @@ export default function AppShell({
               </li>
               <li>
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
-                  Management
+                  Trivia Sets
                 </div>
                 <ul role="list" className="mt-2 space-y-1">
-                  {managementActions.map((action) => (
+                  {triviaSetsActions.map((action) => (
                     <li key={action.name}>
                       <Link
                         href={action.href}
@@ -255,6 +275,7 @@ export default function AppShell({
                   ))}
                 </ul>
               </li>
+              {/* Management section removed - no items */}
 
               {/* User Section */}
               <li className="mt-auto -mx-2">

@@ -1,13 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import Image from "next/image";
+import type { TriviaSet } from "@/lib/supabase";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [latestTriviaSet, setLatestTriviaSet] = useState<TriviaSet | null>(
+    null,
+  );
+  const [isLoadingTrivia, setIsLoadingTrivia] = useState(true);
+
+  useEffect(() => {
+    // Fetch latest published trivia set
+    const fetchLatestTriviaSet = async () => {
+      try {
+        const response = await fetch(
+          "/api/trivia-sets/latest?type=multiple-choice&limit=1",
+        );
+        const result = await response.json();
+        if (result.success && result.data && result.data.length > 0) {
+          setLatestTriviaSet(result.data[0]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch trivia set:", error);
+      } finally {
+        setIsLoadingTrivia(false);
+      }
+    };
+
+    fetchLatestTriviaSet();
+  }, []);
 
   return (
     <div className="bg-white">
@@ -132,6 +158,59 @@ export default function Home() {
           />
         </div>
       </div>
+
+      {/* Latest Trivia Set Section */}
+      {latestTriviaSet && (
+        <div className="bg-indigo-50 py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-base font-semibold leading-7 text-indigo-600">
+                Latest Trivia Set
+              </h2>
+              <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                {latestTriviaSet.title}
+              </p>
+              {latestTriviaSet.description && (
+                <p className="mt-6 text-lg leading-8 text-gray-600">
+                  {latestTriviaSet.description}
+                </p>
+              )}
+              <div className="mt-8 flex items-center justify-center gap-6 text-sm text-gray-600">
+                <span className="flex items-center gap-2">
+                  <span className="font-medium">Questions:</span>
+                  <span>{latestTriviaSet.question_count}</span>
+                </span>
+                {latestTriviaSet.theme && (
+                  <span className="flex items-center gap-2">
+                    <span className="font-medium">Theme:</span>
+                    <span>{latestTriviaSet.theme}</span>
+                  </span>
+                )}
+                {latestTriviaSet.difficulty && (
+                  <span className="flex items-center gap-2">
+                    <span className="font-medium">Difficulty:</span>
+                    <span className="capitalize">
+                      {latestTriviaSet.difficulty}
+                    </span>
+                  </span>
+                )}
+              </div>
+              {latestTriviaSet.tags && latestTriviaSet.tags.length > 0 && (
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                  {latestTriviaSet.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center rounded-md bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Features Section */}
       <div className="py-24 sm:py-32 bg-white">

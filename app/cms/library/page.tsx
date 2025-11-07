@@ -2,23 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { IngestedContent } from "@/lib/supabase";
+import { SourceContentIngested } from "@/lib/supabase";
 import { Heading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { getBadgeConfig } from "@/config/content-badges";
+import { UsageBadges } from "@/components/content-library/usage-badges";
 import clsx from "clsx";
 
 export default function ContentLibraryPage() {
   const router = useRouter();
-  const [items, setItems] = useState<IngestedContent[]>([]);
+  const [items, setItems] = useState<SourceContentIngested[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedItem, setSelectedItem] = useState<IngestedContent | null>(
-    null,
-  );
+  const [selectedItem, setSelectedItem] =
+    useState<SourceContentIngested | null>(null);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -39,7 +38,9 @@ export default function ContentLibraryPage() {
         params.append("search", searchTerm);
       }
 
-      const response = await fetch(`/api/content-source?${params.toString()}`);
+      const response = await fetch(
+        `/api/source-content-ingested?${params.toString()}`,
+      );
       const result = await response.json();
 
       if (!result.success) {
@@ -130,24 +131,37 @@ export default function ContentLibraryPage() {
                 {/* Page Numbers */}
                 {(() => {
                   const pages = [];
+                  const addedPages = new Set<number>(); // Track which page numbers we've added
+
+                  const addPage = (pageNum: number) => {
+                    if (
+                      !addedPages.has(pageNum) &&
+                      pageNum >= 1 &&
+                      pageNum <= totalPages
+                    ) {
+                      addedPages.add(pageNum);
+                      pages.push(
+                        <button
+                          key={pageNum}
+                          onClick={() => goToPage(pageNum)}
+                          className={clsx(
+                            "w-8 h-8 flex items-center justify-center rounded-md text-xs font-medium transition-colors",
+                            currentPage === pageNum
+                              ? "bg-indigo-600 text-white"
+                              : "border border-gray-300 text-gray-700 hover:bg-gray-50",
+                          )}
+                        >
+                          {pageNum}
+                        </button>,
+                      );
+                    }
+                  };
+
                   const showEllipsisStart = currentPage > 3;
                   const showEllipsisEnd = currentPage < totalPages - 2;
 
                   // Always show first page
-                  pages.push(
-                    <button
-                      key={1}
-                      onClick={() => goToPage(1)}
-                      className={clsx(
-                        "w-8 h-8 flex items-center justify-center rounded-md text-xs font-medium transition-colors",
-                        currentPage === 1
-                          ? "bg-indigo-600 text-white"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50",
-                      )}
-                    >
-                      1
-                    </button>,
-                  );
+                  addPage(1);
 
                   // Show ellipsis or page 2
                   if (showEllipsisStart) {
@@ -160,20 +174,7 @@ export default function ContentLibraryPage() {
                       </span>,
                     );
                   } else if (totalPages > 1) {
-                    pages.push(
-                      <button
-                        key={2}
-                        onClick={() => goToPage(2)}
-                        className={clsx(
-                          "w-8 h-8 flex items-center justify-center rounded-md text-xs font-medium transition-colors",
-                          currentPage === 2
-                            ? "bg-indigo-600 text-white"
-                            : "border border-gray-300 text-gray-700 hover:bg-gray-50",
-                        )}
-                      >
-                        2
-                      </button>,
-                    );
+                    addPage(2);
                   }
 
                   // Show middle pages
@@ -182,20 +183,7 @@ export default function ContentLibraryPage() {
 
                   for (let i = startPage; i <= endPage; i++) {
                     if (i > 1 && i < totalPages) {
-                      pages.push(
-                        <button
-                          key={i}
-                          onClick={() => goToPage(i)}
-                          className={clsx(
-                            "w-8 h-8 flex items-center justify-center rounded-md text-xs font-medium transition-colors",
-                            currentPage === i
-                              ? "bg-indigo-600 text-white"
-                              : "border border-gray-300 text-gray-700 hover:bg-gray-50",
-                          )}
-                        >
-                          {i}
-                        </button>,
-                      );
+                      addPage(i);
                     }
                   }
 
@@ -209,39 +197,13 @@ export default function ContentLibraryPage() {
                         ...
                       </span>,
                     );
-                  } else if (totalPages > 2 && totalPages - 1 > endPage) {
-                    pages.push(
-                      <button
-                        key={totalPages - 1}
-                        onClick={() => goToPage(totalPages - 1)}
-                        className={clsx(
-                          "w-8 h-8 flex items-center justify-center rounded-md text-xs font-medium transition-colors",
-                          currentPage === totalPages - 1
-                            ? "bg-indigo-600 text-white"
-                            : "border border-gray-300 text-gray-700 hover:bg-gray-50",
-                        )}
-                      >
-                        {totalPages - 1}
-                      </button>,
-                    );
+                  } else if (totalPages > 2) {
+                    addPage(totalPages - 1);
                   }
 
                   // Always show last page if more than 1 page
                   if (totalPages > 1) {
-                    pages.push(
-                      <button
-                        key={totalPages}
-                        onClick={() => goToPage(totalPages)}
-                        className={clsx(
-                          "w-8 h-8 flex items-center justify-center rounded-md text-xs font-medium transition-colors",
-                          currentPage === totalPages
-                            ? "bg-indigo-600 text-white"
-                            : "border border-gray-300 text-gray-700 hover:bg-gray-50",
-                        )}
-                      >
-                        {totalPages}
-                      </button>,
-                    );
+                    addPage(totalPages);
                   }
 
                   return pages;
@@ -274,13 +236,11 @@ export default function ContentLibraryPage() {
             ) : items.length > 0 ? (
               <ul className="divide-y divide-gray-200">
                 {items.map((item) => {
-                  // Generate title from first line or use existing title
-                  const title =
+                  // Use AI-generated title or fallback
+                  const displayTitle =
                     item.title ||
-                    item.content_text.split("\n")[0].slice(0, 60) +
-                      (item.content_text.split("\n")[0].length > 60
-                        ? "..."
-                        : "");
+                    item.summary?.slice(0, 60) ||
+                    item.content_text.split("\n")[0].slice(0, 60) + "...";
 
                   return (
                     <li
@@ -301,41 +261,57 @@ export default function ContentLibraryPage() {
                                 : "text-gray-900",
                             )}
                           >
-                            {title}
+                            {displayTitle}
                           </h4>
-                          {/* Content Preview - First 2 lines */}
-                          <p
-                            className="text-xs text-gray-600 mt-1 line-clamp-2"
-                            style={{
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                            }}
-                          >
-                            {item.content_text}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            ID: {item.id} • {item.word_count} words
-                          </p>
-                        </div>
-                        {item.used_for && item.used_for.length > 0 && (
-                          <div className="flex gap-1 flex-shrink-0">
-                            {getBadgeConfig(item.used_for).map((badge) => (
-                              <span
-                                key={badge.key}
-                                className={clsx(
-                                  "inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded",
-                                  badge.bgColor,
-                                  badge.textColor,
-                                )}
-                                title={badge.title}
-                              >
-                                {badge.label}
+                          {/* Summary Preview */}
+                          {item.summary ? (
+                            <p
+                              className="text-xs text-gray-600 mt-1 line-clamp-2"
+                              style={{
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {item.summary}
+                            </p>
+                          ) : (
+                            <p
+                              className="text-xs text-gray-600 mt-1 line-clamp-2"
+                              style={{
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {item.content_text}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <p className="text-xs text-gray-500">
+                              ID: {item.id} • {item.word_count || 0} words
+                            </p>
+                            {item.theme && (
+                              <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded">
+                                {item.theme}
                               </span>
-                            ))}
+                            )}
+                            {item.category && (
+                              <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                                {item.category}
+                              </span>
+                            )}
+                            {/* Usage Badges */}
+                            {item.used_for && item.used_for.length > 0 && (
+                              <>
+                                <span className="text-gray-400">•</span>
+                                <UsageBadges usedFor={item.used_for} />
+                              </>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </li>
                   );
@@ -365,13 +341,125 @@ export default function ContentLibraryPage() {
           </div>
           <div className="flex-grow p-6 overflow-y-auto">
             {selectedItem ? (
-              <div>
-                <h2 className="text-base font-bold mb-4">
-                  {`Item #${selectedItem.id}`}
-                </h2>
-                <p className="text-xs whitespace-pre-wrap leading-relaxed">
-                  {selectedItem.content_text}
-                </p>
+              <div className="space-y-4">
+                {/* Header */}
+                <div>
+                  <h2 className="text-xl font-bold mb-2">
+                    {selectedItem.title || `Item #${selectedItem.id}`}
+                  </h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedItem.theme && (
+                      <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-800 rounded">
+                        Theme: {selectedItem.theme}
+                      </span>
+                    )}
+                    {selectedItem.category && (
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        Category: {selectedItem.category}
+                      </span>
+                    )}
+                    <span className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded">
+                      Status: {selectedItem.ingestion_status}
+                    </span>
+                  </div>
+
+                  {/* Usage Badges */}
+                  {selectedItem.used_for &&
+                    selectedItem.used_for.length > 0 && (
+                      <div className="mt-3">
+                        <h3 className="text-xs font-semibold text-gray-700 mb-2">
+                          Used For
+                        </h3>
+                        <UsageBadges usedFor={selectedItem.used_for} />
+                      </div>
+                    )}
+                </div>
+
+                {/* Summary */}
+                {selectedItem.summary && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                      Summary
+                    </h3>
+                    <p className="text-sm text-gray-900 leading-relaxed">
+                      {selectedItem.summary}
+                    </p>
+                  </div>
+                )}
+
+                {/* Tags */}
+                {selectedItem.tags && selectedItem.tags.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                      Tags
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedItem.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="text-xs px-2 py-1 bg-indigo-100 text-indigo-800 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Key Phrases */}
+                {selectedItem.key_phrases &&
+                  selectedItem.key_phrases.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                        Key Phrases
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedItem.key_phrases.map((phrase, i) => (
+                          <span
+                            key={i}
+                            className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
+                          >
+                            {phrase}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Content */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    Content
+                  </h3>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed text-gray-900">
+                    {selectedItem.content_text}
+                  </p>
+                </div>
+
+                {/* Metadata */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    Metadata
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
+                    <div>
+                      <span className="font-medium">Word Count:</span>{" "}
+                      {selectedItem.word_count || "N/A"}
+                    </div>
+                    <div>
+                      <span className="font-medium">Character Count:</span>{" "}
+                      {selectedItem.char_count || "N/A"}
+                    </div>
+                    <div>
+                      <span className="font-medium">Created:</span>{" "}
+                      {new Date(selectedItem.created_at).toLocaleString()}
+                    </div>
+                    <div>
+                      <span className="font-medium">Updated:</span>{" "}
+                      {new Date(selectedItem.updated_at).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="text-center text-gray-500 h-full flex items-center justify-center">

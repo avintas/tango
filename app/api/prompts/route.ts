@@ -3,11 +3,37 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 
 /**
  * GET /api/prompts
- * Get all prompts with pagination
+ * Get all prompts with pagination, or get prompt by content_type
+ * Query params:
+ *   - content_type: Filter by content type (returns single prompt if exactly one exists)
+ *   - limit, offset: Pagination (when content_type not provided)
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const content_type = searchParams.get("content_type");
+
+    // If content_type is provided, fetch prompt for that type
+    if (content_type) {
+      const { data, error } = await supabaseAdmin
+        .from("prompts")
+        .select("*")
+        .eq("content_type", content_type)
+        .order("id", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      // Return single prompt if found, null if not found
+      return NextResponse.json({
+        success: true,
+        data: data && data.length > 0 ? data[0] : null,
+      });
+    }
+
+    // Otherwise, return paginated list
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 

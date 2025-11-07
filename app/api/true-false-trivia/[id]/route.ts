@@ -10,10 +10,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // GET /api/true-false-trivia/[id] - Get single entry
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     const { data, error } = await supabase
       .from("trivia_true_false")
       .select("*")
@@ -44,10 +45,11 @@ export async function GET(
 // PUT /api/true-false-trivia/[id] - Update entry
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     const body: TrueFalseTriviaUpdateInput = await request.json();
 
     const { data, error } = await supabase
@@ -81,10 +83,11 @@ export async function PUT(
 // PATCH /api/true-false-trivia/[id] - Partially update entry (e.g., status)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     const body: Partial<TrueFalseTriviaUpdateInput> = await request.json();
 
     const updateData: Record<string, any> = {
@@ -129,10 +132,11 @@ export async function PATCH(
 // DELETE /api/true-false-trivia/[id] - Delete entry
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
 
     const { error } = await supabase
       .from("trivia_true_false")

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Theme } from "@/components/theme-selector";
 
 // Ensure environment variables are defined at runtime for security and robustness.
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -113,21 +114,29 @@ export interface TriviaQuestionData {
   wrong_answers: string[];
   explanation?: string;
   tags?: string[];
+  // Optional Process Builder fields
+  question_id?: string; // Unique ID for this instance
+  source_id?: number; // Reference to source question
+  difficulty?: number;
+  points?: number;
+  time_limit?: number;
 }
 
 export interface TriviaSet {
-  id: string;
+  id: number; // BIGSERIAL = number (matches SQL)
   title: string;
   slug: string;
   description?: string;
   category?: string;
   theme?: string;
   tags: string[];
-  difficulty?: string;
-  question_count: number;
+  difficulty?: "easy" | "medium" | "hard"; // Matches actual constraint
   question_data: TriviaQuestionData[];
-  status: "draft" | "published" | "archived";
-  visibility: "Public" | "Unlisted" | "Private";
+  question_count: number; // Must be > 0 (has check constraint)
+  status: "draft" | "scheduled" | "published"; // Matches actual constraint (no 'archived')
+  visibility: "Public" | "Unlisted" | "Private"; // Matches actual constraint, defaults to 'Private'
+  published_at?: string; // TIMESTAMPTZ
+  scheduled_for?: string; // TIMESTAMPTZ (required if status='scheduled')
   created_at: string;
   updated_at: string;
 }
@@ -139,9 +148,129 @@ export interface CreateTriviaSet {
   category?: string;
   theme?: string;
   tags?: string[];
-  difficulty?: string;
-  question_count: number;
+  difficulty?: "easy" | "medium" | "hard";
+  question_count: number; // Must be > 0
   question_data: TriviaQuestionData[];
-  status?: "draft" | "published" | "archived";
+  status?: "draft" | "scheduled" | "published";
   visibility?: "Public" | "Unlisted" | "Private";
+  published_at?: string;
+  scheduled_for?: string; // Required if status='scheduled'
+}
+
+// Types for source_content_ingested table (new workflow system)
+export type SourceContentCategory =
+  // Players theme categories
+  | "Player Spotlight"
+  | "Sharpshooters"
+  | "Net Minders"
+  | "Icons"
+  | "Captains"
+  | "Hockey is Family"
+  // Teams & Organizations theme categories
+  | "Stanley Cup Playoffs"
+  | "NHL Draft"
+  | "Free Agency"
+  | "Game Day"
+  | "Hockey Nations"
+  | "All-Star Game"
+  | "Heritage Classic"
+  // Venues & Locations theme categories
+  | "Stadium Series"
+  | "Global Series"
+  // Awards & Honors theme categories
+  | "NHL Awards"
+  | "Milestones"
+  // Leadership & Staff theme categories
+  | "Coaching"
+  | "Management"
+  | "Front Office";
+
+export type IngestionStatus = "draft" | "validated" | "enriched" | "complete";
+
+export interface SourceContentIngested {
+  id: number; // BIGSERIAL
+  content_text: string;
+  word_count?: number;
+  char_count?: number;
+
+  // AI-extracted metadata
+  theme: Theme; // Required - must be one of 5 standardized themes
+  tags?: string[]; // Rich tag fabric
+  category?: SourceContentCategory; // Theme-specific category refinement
+  summary?: string; // AI-generated summary
+  title?: string; // AI-generated title
+  key_phrases?: string[]; // Key phrases extracted by AI
+  metadata?: Record<string, unknown>; // Additional metadata (JSONB)
+
+  // Usage tracking
+  used_for?: string[]; // Array tracking usage: 'multiple-choice', 'true-false', 'who-am-i', 'stat', 'motivational', 'greeting', 'wisdom'
+
+  // Workflow tracking
+  ingestion_process_id?: string; // Link to process execution
+  ingestion_status: IngestionStatus;
+
+  // Timestamps
+  created_at: string; // TIMESTAMPTZ
+  updated_at: string; // TIMESTAMPTZ
+}
+
+export interface CreateSourceContentIngested {
+  content_text: string;
+  word_count?: number;
+  char_count?: number;
+  theme: Theme; // Required
+  tags?: string[];
+  category?: SourceContentCategory;
+  summary?: string;
+  title?: string;
+  key_phrases?: string[];
+  metadata?: Record<string, unknown>;
+  ingestion_process_id?: string;
+  ingestion_status?: IngestionStatus; // Defaults to 'draft'
+}
+
+export interface UpdateSourceContentIngested {
+  content_text?: string;
+  word_count?: number;
+  char_count?: number;
+  theme?: Theme;
+  tags?: string[];
+  category?: SourceContentCategory;
+  summary?: string;
+  title?: string;
+  key_phrases?: string[];
+  metadata?: Record<string, unknown>;
+  ingestion_process_id?: string;
+  ingestion_status?: IngestionStatus;
+}
+
+// Types for ai_extraction_prompts table
+export type PromptType = "metadata_extraction" | "content_enrichment";
+
+export interface AIExtractionPrompt {
+  id: number; // BIGSERIAL
+  prompt_name: string;
+  prompt_type: PromptType;
+  prompt_content: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string; // TIMESTAMPTZ
+  updated_at: string; // TIMESTAMPTZ
+  created_by?: string; // UUID (references auth.users)
+}
+
+export interface CreateAIExtractionPrompt {
+  prompt_name: string;
+  prompt_type: PromptType;
+  prompt_content: string;
+  description?: string;
+  is_active?: boolean; // Defaults to true
+}
+
+export interface UpdateAIExtractionPrompt {
+  prompt_name?: string;
+  prompt_type?: PromptType;
+  prompt_content?: string;
+  description?: string;
+  is_active?: boolean;
 }

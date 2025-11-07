@@ -1,0 +1,61 @@
+{
+  "id": "build-trivia-set",
+  "name": "Build Trivia Set",
+  "description": "Creates a curated trivia set from existing questions",
+  "version": "1.0.0",
+  "enabled": true,
+  "tasks": [
+    {
+      "id": "query-questions",
+      "timeout": 30000,
+      "retryable": true,
+      "maxRetries": 3,
+      "retryDelay": 1000
+    },
+    {
+      "id": "select-balance",
+      "timeout": 10000,
+      "retryable": false
+    },
+    {
+      "id": "generate-metadata",
+      "timeout": 5000,
+      "retryable": false
+    },
+    {
+      "id": "assemble-data",
+      "timeout": 5000,
+      "retryable": false
+    },
+    {
+      "id": "create-record",
+      "timeout": 30000,
+      "retryable": true,
+      "maxRetries": 2,
+      "retryDelay": 2000
+    },
+    {
+      "id": "validate-finalize",
+      "timeout": 10000,
+      "retryable": false
+    }
+  ],
+  "requiredRules": ["questionTypes", "questionCount"],
+  "optionalRules": [
+    "distributionStrategy",
+    "theme",
+    "cooldownDays",
+    "allowPartialSets"
+  ],
+  "defaults": {
+    "distributionStrategy": "weighted",
+    "cooldownDays": 30,
+    "allowPartialSets": false
+  },
+  "limits": {
+    "questionCount": {
+      "min": 1,
+      "max": 100
+    }
+  }
+}

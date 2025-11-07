@@ -9,10 +9,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // GET /api/motivational/[id] - Get single motivational entry
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
 
     const { data, error } = await supabase
       .from("collection_motivational")
@@ -44,10 +45,11 @@ export async function GET(
 // PUT /api/motivational/[id] - Update motivational entry
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     const body = await request.json();
 
     // Build update object with only provided fields
@@ -103,10 +105,11 @@ export async function PUT(
 // PATCH /api/motivational/[id] - Partially update motivational (archive/status changes)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
     const body = await request.json();
 
     const updateData: Record<string, any> = {
@@ -155,10 +158,11 @@ export async function PATCH(
 // DELETE /api/motivational/[id] - Delete motivational entry
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const id = parseInt(params.id, 10);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id, 10);
 
     const { error } = await supabase.from("motivational").delete().eq("id", id);
 

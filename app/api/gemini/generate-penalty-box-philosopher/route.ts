@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateWisdomContent } from "@/lib/gemini-wisdom";
+import { generateWisdomContent } from "@/gemini";
 import { CollectionContent } from "@/lib/types";
 
 /**

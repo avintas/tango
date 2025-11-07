@@ -36,91 +36,102 @@ export async function POST(req: Request) {
     switch (contentType) {
       case "stat":
         tableName = "collection_stats";
-        recordsToInsert = itemsToSave.map((item: CollectionContent) => ({
-          stat_text: item.content_text,
-          stat_value: item.stat_value,
-          stat_category: item.stat_category,
-          year: item.year,
-          theme: item.theme,
-          category: item.category,
-          attribution: item.attribution,
-          source_content_id: sourceContentId ? Number(sourceContentId) : null,
-        }));
+        recordsToInsert = itemsToSave
+          .filter((item): item is CollectionContent => "content_type" in item)
+          .map((item) => ({
+            stat_text: item.content_text,
+            stat_value: item.stat_value,
+            stat_category: item.stat_category,
+            year: item.year,
+            theme: item.theme,
+            category: item.category,
+            source_content_id: sourceContentId ? Number(sourceContentId) : null,
+          }));
         break;
 
       case "motivational":
         tableName = "collection_motivational";
-        recordsToInsert = itemsToSave.map((item: CollectionContent) => ({
-          quote: item.content_text,
-          attribution: item.author, // Map author to attribution column
-          context: item.context,
-          theme: item.theme,
-          category: item.category,
-          source_content_id: sourceContentId ? Number(sourceContentId) : null,
-        }));
+        recordsToInsert = itemsToSave
+          .filter((item): item is CollectionContent => "content_type" in item)
+          .map((item) => ({
+            quote: item.content_text,
+            attribution: item.author, // Map author to attribution column
+            context: item.context,
+            theme: item.theme,
+            category: item.category,
+            source_content_id: sourceContentId ? Number(sourceContentId) : null,
+          }));
         break;
 
       case "greeting":
         tableName = "collection_greetings";
-        recordsToInsert = itemsToSave.map((item: CollectionContent) => ({
-          greeting_text: item.content_text,
-          attribution: item.attribution,
-          source_content_id: sourceContentId ? Number(sourceContentId) : null,
-        }));
+        recordsToInsert = itemsToSave
+          .filter((item): item is CollectionContent => "content_type" in item)
+          .map((item) => ({
+            greeting_text: item.content_text,
+            attribution: item.attribution,
+            source_content_id: sourceContentId ? Number(sourceContentId) : null,
+          }));
         break;
 
       case "wisdom":
         tableName = "collection_wisdom";
-        recordsToInsert = itemsToSave.map((item: CollectionContent) => ({
-          title: item.content_title || "Untitled",
-          musing: item.musings || item.content_text,
-          from_the_box: item.from_the_box,
-          theme: item.theme,
-          category: item.category,
-          attribution: item.attribution || "Penalty Box Philosopher",
-          source_content_id: sourceContentId ? Number(sourceContentId) : null,
-        }));
+        recordsToInsert = itemsToSave
+          .filter((item): item is CollectionContent => "content_type" in item)
+          .map((item) => ({
+            title: item.content_title || "Untitled",
+            musing: item.musings || item.content_text,
+            from_the_box: item.from_the_box,
+            theme: item.theme,
+            category: item.category,
+            attribution: item.attribution || "Penalty Box Philosopher",
+            source_content_id: sourceContentId ? Number(sourceContentId) : null,
+          }));
         break;
 
       // Handle Trivia Types
       case "multiple-choice":
         tableName = "trivia_multiple_choice";
-        recordsToInsert = itemsToSave.map((item: TriviaQuestion) => ({
-          question_text: item.question_text,
-          correct_answer: item.correct_answer,
-          wrong_answers: item.wrong_answers,
-          explanation: item.explanation,
-          theme: item.theme,
-          category: item.category,
-          attribution: item.attribution,
-          source_content_id: sourceContentId ? Number(sourceContentId) : null,
-        }));
+        recordsToInsert = itemsToSave
+          .filter((item): item is TriviaQuestion => "question_type" in item)
+          .map((item) => ({
+            question_text: item.question_text,
+            correct_answer: item.correct_answer,
+            wrong_answers: item.wrong_answers,
+            explanation: item.explanation,
+            theme: item.theme,
+            category: item.category,
+            source_content_id: sourceContentId ? Number(sourceContentId) : null,
+          }));
         break;
 
       case "true-false":
-        tableName = "true_false_trivia";
-        recordsToInsert = itemsToSave.map((item: TriviaQuestion) => ({
-          question_text: item.question_text,
-          is_true: item.correct_answer.toLowerCase() === "true" ? true : false,
-          explanation: item.explanation,
-          theme: item.theme,
-          category: item.category,
-          attribution: item.attribution,
-          source_content_id: sourceContentId ? Number(sourceContentId) : null,
-        }));
+        tableName = "trivia_true_false";
+        recordsToInsert = itemsToSave
+          .filter((item): item is TriviaQuestion => "question_type" in item)
+          .map((item) => ({
+            question_text: item.question_text,
+            is_true:
+              item.correct_answer.toLowerCase() === "true" ? true : false,
+            explanation: item.explanation,
+            theme: item.theme,
+            category: item.category,
+            source_content_id: sourceContentId ? Number(sourceContentId) : null,
+          }));
         break;
 
       case "who-am-i":
         tableName = "trivia_who_am_i";
-        recordsToInsert = itemsToSave.map((item: TriviaQuestion) => ({
-          question_text: item.question_text,
-          correct_answer: item.correct_answer,
-          explanation: item.explanation,
-          theme: item.theme,
-          category: item.category,
-          attribution: item.attribution,
-          source_content_id: sourceContentId ? Number(sourceContentId) : null,
-        }));
+        recordsToInsert = itemsToSave
+          .filter((item): item is TriviaQuestion => "question_type" in item)
+          .map((item) => ({
+            question_text: item.question_text,
+            correct_answer: item.correct_answer,
+            explanation: item.explanation,
+            theme: item.theme,
+            category: item.category,
+            source_content_id: sourceContentId ? Number(sourceContentId) : null,
+          }));
         break;
 
       default:

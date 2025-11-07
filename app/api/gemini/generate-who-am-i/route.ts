@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateWhoAmI } from "@/lib/gemini-who-am-i";
+import { generateWhoAmI } from "@/gemini";
 import { TriviaQuestion } from "@/lib/types";
 
 function formatContentForDisplay(data: TriviaQuestion[]): string {

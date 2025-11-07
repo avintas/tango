@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateTrueFalse } from "@/lib/gemini-true-false";
+import { generateTrueFalse } from "@/gemini";
 import { TriviaQuestion } from "@/lib/types";
 
 function formatContentForDisplay(data: TriviaQuestion[]): string {

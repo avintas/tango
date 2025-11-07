@@ -39,6 +39,13 @@ export default function DashboardPage() {
       try {
         // Fetch sourced text count
         const sourcedResponse = await fetch("/api/content-source?limit=1");
+        if (!sourcedResponse.ok) {
+          throw new Error(`HTTP error! status: ${sourcedResponse.status}`);
+        }
+        const contentType = sourcedResponse.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response is not JSON");
+        }
         const sourcedResult = await sourcedResponse.json();
         const sourcedCount = sourcedResult.count || 0;
 
@@ -49,12 +56,28 @@ export default function DashboardPage() {
         });
 
         const statsResponse = await fetch("/api/trivia-questions/stats");
+        if (!statsResponse.ok) {
+          throw new Error(`HTTP error! status: ${statsResponse.status}`);
+        }
+        const statsContentType = statsResponse.headers.get("content-type");
+        if (
+          !statsContentType ||
+          !statsContentType.includes("application/json")
+        ) {
+          throw new Error("Response is not JSON");
+        }
         const statsResult = await statsResponse.json();
         if (statsResult.success) {
           setTriviaStats(statsResult.stats);
         }
       } catch (error) {
         console.error("Failed to fetch dashboard stats:", error);
+        // Set default values on error
+        setTriviaStats({
+          draft: 0,
+          published: 0,
+          archived: 0,
+        });
       } finally {
         setLoading(false);
       }

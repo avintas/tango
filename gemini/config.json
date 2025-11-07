@@ -1,0 +1,6 @@
+{
+  "name": "gemini",
+  "version": "1.0.0",
+  "description": "Centralized Gemini AI integration module",
+  "type": "module"
+}

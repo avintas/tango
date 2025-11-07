@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ContentTypeSelector, {
-  ContentType,
-} from "@/components/content-type-selector";
+import { ContentType } from "@/components/content-type-selector";
 import { useAuth } from "@/lib/auth-context";
 import { CollectionContent, TriviaQuestion } from "@/lib/types";
+import { UsageBadges } from "@/components/content-library/usage-badges";
 
 interface GenerationJob {
   id: string;
@@ -33,6 +32,11 @@ export default function MainGeneratorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [autoLoadedPrompt, setAutoLoadedPrompt] = useState<string | null>(null);
+  const [sourceContentUsedFor, setSourceContentUsedFor] = useState<
+    string[] | null
+  >(null);
+  const [sessionUsedFor, setSessionUsedFor] = useState<string[]>([]); // Track what's been created in this session
 
   // State for the active bulk job monitoring
   const [activeBulkJob, setActiveBulkJob] = useState<{
@@ -51,18 +55,90 @@ export default function MainGeneratorPage() {
     "wisdom",
   ];
 
-  // Check for source content and prompt from storage on mount
+  // Load content type and prompt from sessionStorage when prompt is selected
+  useEffect(() => {
+    const storedPrompt = sessionStorage.getItem("aiPrompt");
+    const storedContentType = sessionStorage.getItem(
+      "contentType",
+    ) as ContentType | null;
+
+    if (storedPrompt) {
+      setAiPrompt(storedPrompt);
+      setAutoLoadedPrompt(storedPrompt);
+    }
+
+    if (storedContentType && mainGeneratorTypes.includes(storedContentType)) {
+      setSelectedContentType(storedContentType);
+    }
+
+    // Clear sessionStorage after loading
+    sessionStorage.removeItem("aiPrompt");
+    sessionStorage.removeItem("contentType");
+  }, []);
+
+  // Check for source content from storage on mount and fetch usage data
   useEffect(() => {
     const storedContent = sessionStorage.getItem("sourceContent");
+    const storedContentId = sessionStorage.getItem("sourceContentId");
+    const storedSessionUsedFor = sessionStorage.getItem("sessionUsedFor");
+    const storedSessionContentId = sessionStorage.getItem("sessionContentId"); // Track which content ID the session is for
+
     if (storedContent) {
       setSourceContent(storedContent);
     }
 
-    const storedPrompt = sessionStorage.getItem("aiPrompt");
-    if (storedPrompt) {
-      setAiPrompt(storedPrompt);
+    // Only restore session tracking if it's for the same source content
+    if (
+      storedContentId &&
+      storedContentId === storedSessionContentId &&
+      storedSessionUsedFor
+    ) {
+      try {
+        setSessionUsedFor(JSON.parse(storedSessionUsedFor));
+      } catch (error) {
+        console.error("Failed to parse sessionUsedFor:", error);
+      }
+    } else {
+      // Reset session tracking if different source content
+      setSessionUsedFor([]);
+      sessionStorage.removeItem("sessionUsedFor");
+    }
+
+    // Fetch usage badges from database if we have a source content ID
+    if (storedContentId) {
+      sessionStorage.setItem("sessionContentId", storedContentId); // Store which content ID this session is for
+      const fetchSourceContentUsage = async () => {
+        try {
+          const response = await fetch(
+            `/api/source-content-ingested?id=${storedContentId}`,
+          );
+          const result = await response.json();
+
+          if (result.success && result.data && result.data.used_for) {
+            setSourceContentUsedFor(result.data.used_for);
+          }
+        } catch (error) {
+          console.error("Failed to fetch source content usage:", error);
+        }
+      };
+
+      fetchSourceContentUsage();
+    } else {
+      // Clear everything if no source content ID
+      setSourceContentUsedFor(null);
+      setSessionUsedFor([]);
+      sessionStorage.removeItem("sessionContentId");
     }
   }, []);
+
+  // Persist sessionUsedFor to sessionStorage
+  useEffect(() => {
+    if (sessionUsedFor.length > 0) {
+      sessionStorage.setItem("sessionUsedFor", JSON.stringify(sessionUsedFor));
+    } else {
+      sessionStorage.removeItem("sessionUsedFor");
+    }
+  }, [sessionUsedFor]);
 
   // Persist sourceContent to sessionStorage whenever it changes
   useEffect(() => {
@@ -346,6 +422,34 @@ export default function MainGeneratorPage() {
         alert(
           `Success! Saved ${result.count || "content"} ${contentTypeLabel} item(s) to the database.`,
         );
+
+        // Track this content type in session
+        if (
+          selectedContentType &&
+          !sessionUsedFor.includes(selectedContentType)
+        ) {
+          setSessionUsedFor([...sessionUsedFor, selectedContentType]);
+        }
+
+        // Refresh usage badges from database after saving
+        const sourceContentId = sessionStorage.getItem("sourceContentId");
+        if (sourceContentId) {
+          try {
+            const usageResponse = await fetch(
+              `/api/source-content-ingested?id=${sourceContentId}`,
+            );
+            const usageResult = await usageResponse.json();
+            if (
+              usageResult.success &&
+              usageResult.data &&
+              usageResult.data.used_for
+            ) {
+              setSourceContentUsedFor(usageResult.data.used_for);
+            }
+          } catch (error) {
+            console.error("Failed to refresh usage badges:", error);
+          }
+        }
       } else {
         alert(`Error: ${result.error || "Failed to save content"}`);
       }
@@ -434,9 +538,8 @@ export default function MainGeneratorPage() {
             )}
           </div>
           <p className="text-sm text-gray-500 leading-relaxed mt-1">
-            Universal content generator for all content types. Load your source
-            content, provide an AI prompt, select a content type, and generate
-            any type of content from a single interface.
+            Universal content generator. Load your source content, select a
+            prompt, and generate any type of content from a single interface.
           </p>
         </div>
 
@@ -466,11 +569,43 @@ export default function MainGeneratorPage() {
             placeholder="Paste your source content here or load from library..."
             className="w-full rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
           />
+
+          {/* Usage Badges - Show what content types have been created from this source */}
+          {(sessionUsedFor.length > 0 ||
+            (sourceContentUsedFor && sourceContentUsedFor.length > 0)) && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium text-gray-600">
+                  Used for:
+                </span>
+                {/* Show session badges first (what was created in this session) */}
+                {sessionUsedFor.length > 0 && (
+                  <>
+                    <UsageBadges usedFor={sessionUsedFor} />
+                    {sourceContentUsedFor &&
+                      sourceContentUsedFor.length > 0 && (
+                        <span className="text-xs text-gray-400">•</span>
+                      )}
+                  </>
+                )}
+                {/* Show database badges (what was created previously) */}
+                {sourceContentUsedFor && sourceContentUsedFor.length > 0 && (
+                  <UsageBadges usedFor={sourceContentUsedFor} />
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end mt-3">
             <button
               onClick={() => {
                 setSourceContent("");
+                setSourceContentUsedFor(null);
+                setSessionUsedFor([]);
                 sessionStorage.removeItem("sourceContent");
+                sessionStorage.removeItem("sourceContentId");
+                sessionStorage.removeItem("sessionUsedFor");
+                sessionStorage.removeItem("sessionContentId");
               }}
               className="px-4 py-2 bg-transparent border border-indigo-600 text-indigo-600 text-sm font-medium rounded-md hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
             >
@@ -485,64 +620,109 @@ export default function MainGeneratorPage() {
             <h2 className="text-base font-semibold text-gray-900">
               2. Provide AI Prompt
             </h2>
-            <button
-              onClick={() => {
-                sessionStorage.setItem(
-                  "libraryReturnPath",
-                  "/cms/processing/main-generator",
-                );
-                router.push("/cms/prompts-library");
-              }}
-              className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors flex items-center gap-2"
-            >
-              📝 Load from Prompts
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  sessionStorage.setItem(
+                    "libraryReturnPath",
+                    "/cms/processing/main-generator",
+                  );
+                  router.push("/cms/prompts-library");
+                }}
+                className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors flex items-center gap-2"
+              >
+                📝 Load from Prompts
+              </button>
+              <button
+                onClick={() => {
+                  setAiPrompt("");
+                  setAutoLoadedPrompt(null);
+                  setSelectedContentType(null);
+                  sessionStorage.removeItem("aiPrompt");
+                  sessionStorage.removeItem("contentType");
+                }}
+                className="px-4 py-2 bg-transparent border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+              >
+                Clear
+              </button>
+            </div>
           </div>
+          {autoLoadedPrompt && aiPrompt === autoLoadedPrompt && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-green-50 border border-green-200 text-xs font-medium text-green-700">
+                <span>✓</span>
+                <span>Prompt loaded</span>
+              </span>
+              {selectedContentType && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-xs font-medium text-blue-700">
+                  {selectedContentType === "multiple-choice" &&
+                    "🎯 Multiple Choice"}
+                  {selectedContentType === "true-false" && "⚖️ True/False"}
+                  {selectedContentType === "who-am-i" && "🎭 Who Am I"}
+                  {selectedContentType === "stat" && "📊 Stats"}
+                  {selectedContentType === "motivational" && "💪 Motivational"}
+                  {selectedContentType === "greeting" && "👋 Greetings"}
+                  {selectedContentType === "wisdom" && "✨ Wisdom"}
+                </span>
+              )}
+            </div>
+          )}
           <textarea
             rows={5}
             value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
+            onChange={(e) => {
+              setAiPrompt(e.target.value);
+              // Clear auto-loaded indicator if user edits the prompt
+              if (autoLoadedPrompt && e.target.value !== autoLoadedPrompt) {
+                setAutoLoadedPrompt(null);
+                // Clear content type if user edits a loaded prompt
+                setSelectedContentType(null);
+              }
+            }}
             placeholder="Enter your AI prompt here or load from prompts library..."
             className="w-full rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
           />
+
+          {/* Show content type selector only for free prompts (no contentType set) */}
+          {!selectedContentType && aiPrompt.trim() && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <label className="block text-xs font-medium text-gray-700 mb-2">
+                Content Type (required for free prompts)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {mainGeneratorTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setSelectedContentType(type)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      selectedContentType === type
+                        ? "bg-indigo-600 text-white"
+                        : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {type === "multiple-choice" && "🎯 Multiple Choice"}
+                    {type === "true-false" && "⚖️ True/False"}
+                    {type === "who-am-i" && "🎭 Who Am I"}
+                    {type === "stat" && "📊 Stats"}
+                    {type === "motivational" && "💪 Motivational"}
+                    {type === "greeting" && "👋 Greetings"}
+                    {type === "wisdom" && "✨ Wisdom"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* 3. Content Type Selector */}
+        {/* 3. Generate */}
         <div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-2">
-            3. Select Content Type
-          </h2>
-          <p className="text-xs text-gray-500 mb-4">
-            This choice determines the kind of content you will generate and
-            save.
-          </p>
-          <ContentTypeSelector
-            selectedType={selectedContentType}
-            onTypeSelect={setSelectedContentType}
-            allowedTypes={mainGeneratorTypes}
-          />
-        </div>
-
-        {/* 4. Actions Panel */}
-        <div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-2">
-            4. Generate
+            3. Generate
           </h2>
           <p className="text-sm text-gray-500 mb-4">
-            Use the buttons below to generate content. The &apos;Generate in
-            Bulk&apos; button will trigger all 7 content types in the
-            background.
+            Generate content using your source content and AI prompt.
           </p>
           <div className="flex justify-end gap-3 mt-3">
-            <button
-              onClick={() => {
-                setAiPrompt("");
-                sessionStorage.removeItem("aiPrompt");
-              }}
-              className="px-4 py-2 bg-transparent border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-            >
-              Clear Prompt
-            </button>
             <button
               onClick={handleGenerateContent}
               disabled={
