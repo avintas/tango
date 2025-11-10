@@ -7,6 +7,16 @@ import { useAuth } from "@/lib/auth-context";
 import { CollectionContent, TriviaQuestion } from "@/lib/types";
 import { UsageBadges } from "@/components/content-library/usage-badges";
 
+const mainGeneratorTypes: ContentType[] = [
+  "multiple-choice",
+  "true-false",
+  "who-am-i",
+  "stat",
+  "motivational",
+  "greeting",
+  "wisdom",
+];
+
 interface GenerationJob {
   id: string;
   status: "pending" | "in_progress" | "processing" | "completed" | "failed";
@@ -45,35 +55,37 @@ export default function MainGeneratorPage() {
     jobs: GenerationJob[];
   } | null>(null);
 
-  const mainGeneratorTypes: ContentType[] = [
-    "multiple-choice",
-    "true-false",
-    "who-am-i",
-    "stat",
-    "motivational",
-    "greeting",
-    "wisdom",
-  ];
-
-  // Load content type and prompt from sessionStorage when prompt is selected
+  // Load content type and prompt from sessionStorage on mount
+  // These persist across page navigations (e.g., when loading new source content)
   useEffect(() => {
     const storedPrompt = sessionStorage.getItem("aiPrompt");
     const storedContentType = sessionStorage.getItem(
       "contentType",
     ) as ContentType | null;
 
+    // Check if we're returning from prompts library (new prompt was just loaded)
+    const isReturningFromPrompts =
+      sessionStorage.getItem("libraryReturnPath") ===
+        "/cms/processing/main-generator" &&
+      sessionStorage.getItem("promptsLibraryReturn") === "true";
+
     if (storedPrompt) {
       setAiPrompt(storedPrompt);
-      setAutoLoadedPrompt(storedPrompt);
+      // Only set autoLoadedPrompt if coming from prompts library (new prompt loaded)
+      if (isReturningFromPrompts) {
+        setAutoLoadedPrompt(storedPrompt);
+        sessionStorage.removeItem("promptsLibraryReturn"); // Clear the flag
+      }
     }
 
     if (storedContentType && mainGeneratorTypes.includes(storedContentType)) {
       setSelectedContentType(storedContentType);
     }
 
-    // Clear sessionStorage after loading
-    sessionStorage.removeItem("aiPrompt");
-    sessionStorage.removeItem("contentType");
+    // Clear libraryReturnPath if set (cleanup)
+    if (sessionStorage.getItem("libraryReturnPath")) {
+      sessionStorage.removeItem("libraryReturnPath");
+    }
   }, []);
 
   // Check for source content from storage on mount and fetch usage data
@@ -153,6 +165,13 @@ export default function MainGeneratorPage() {
       sessionStorage.setItem("aiPrompt", aiPrompt);
     }
   }, [aiPrompt]);
+
+  // Persist selectedContentType to sessionStorage whenever it changes
+  useEffect(() => {
+    if (selectedContentType) {
+      sessionStorage.setItem("contentType", selectedContentType);
+    }
+  }, [selectedContentType]);
 
   // Effect to load and monitor an active bulk job from localStorage
   useEffect(() => {

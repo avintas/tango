@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -29,15 +29,7 @@ export default function QuestionBank({
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    fetchPublishedQuestions();
-  }, [typeFilter, themeFilter]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [questions, searchTerm]);
-
-  const fetchPublishedQuestions = async () => {
+  const fetchPublishedQuestions = useCallback(async () => {
     setIsLoading(true);
     let url = "/api/trivia-questions?status=published&limit=1000";
     if (typeFilter !== "all") {
@@ -58,9 +50,9 @@ export default function QuestionBank({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [typeFilter, themeFilter]);
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...questions];
     if (searchTerm.trim()) {
       filtered = filtered.filter((q) =>
@@ -68,7 +60,15 @@ export default function QuestionBank({
       );
     }
     setFilteredQuestions(filtered);
-  };
+  }, [questions, searchTerm]);
+
+  useEffect(() => {
+    fetchPublishedQuestions();
+  }, [fetchPublishedQuestions]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const handleArchiveQuestion = async (questionId: number) => {
     try {

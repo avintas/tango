@@ -8,6 +8,7 @@ interface ParsedQuestion {
   correct_answer: string;
   wrong_answers: string[];
   question_type: string;
+  difficulty?: string;
 }
 
 /**
@@ -34,6 +35,7 @@ function parseMultipleChoice(content: string): ParsedQuestion[] {
     let question_text = "";
     let theme = "";
     let tags: string[] = [];
+    let difficulty: string | undefined = undefined;
     let correctAnswer = "";
     const options: { [key: string]: string } = {};
 
@@ -57,6 +59,18 @@ function parseMultipleChoice(content: string): ParsedQuestion[] {
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean);
+      }
+
+      // Extract difficulty
+      if (line.startsWith("**Difficulty:**")) {
+        const diffValue = line
+          .replace("**Difficulty:**", "")
+          .trim()
+          .toLowerCase();
+        // Normalize to capitalized format
+        if (diffValue === "easy") difficulty = "Easy";
+        else if (diffValue === "medium") difficulty = "Medium";
+        else if (diffValue === "hard") difficulty = "Hard";
       }
 
       // Extract options (A, B, C, D)
@@ -89,6 +103,7 @@ function parseMultipleChoice(content: string): ParsedQuestion[] {
           correct_answer: correctText,
           wrong_answers: wrongAnswers,
           question_type: "multiple-choice",
+          difficulty: difficulty,
         });
       }
     }
@@ -139,6 +154,7 @@ export async function POST(request: NextRequest) {
           explanation: null, // Can be added later via CMS
           theme: q.theme || null,
           tags: q.tags || null,
+          difficulty: q.difficulty || null,
           status: "draft",
           source_content_id: sourceContentId ? parseInt(sourceContentId) : null,
         })),

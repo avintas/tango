@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
@@ -25,9 +26,13 @@ interface TriviaSetTrueFalse {
 }
 
 export default function TriviaSetsTrueFalseLibraryPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialStatus = (searchParams.get("status") as StatusFilter) || "draft";
+
   const [items, setItems] = useState<TriviaSetTrueFalse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("draft");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [stats, setStats] = useState({
     draft: 0,
@@ -54,6 +59,14 @@ export default function TriviaSetsTrueFalseLibraryPage() {
       setLoading(false);
     }
   }, [statusFilter]);
+
+  useEffect(() => {
+    const statusFromUrl =
+      (searchParams.get("status") as StatusFilter) || "draft";
+    if (statusFromUrl !== statusFilter) {
+      setStatusFilter(statusFromUrl);
+    }
+  }, [searchParams, statusFilter]);
 
   useEffect(() => {
     fetchData();
@@ -322,12 +335,24 @@ export default function TriviaSetsTrueFalseLibraryPage() {
                     </div>
 
                     {/* Actions */}
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="text-red-600 hover:text-red-900 text-sm"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() =>
+                          router.push(
+                            `/cms/trivia-sets-true-false-library/${item.id}`,
+                          )
+                        }
+                        className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="text-red-600 hover:text-red-900 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
 
                   {/* Description */}

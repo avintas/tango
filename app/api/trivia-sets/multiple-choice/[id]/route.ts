@@ -1,62 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-export async function PATCH(
+export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    const body = await request.json();
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid ID format" },
+        { status: 400 },
+      );
+    }
 
     const { data, error } = await supabaseAdmin
       .from("sets_trivia_multiple_choice")
-      .update(body)
+      .select("*")
       .eq("id", id)
-      .select()
       .single();
 
-    if (error) {
+    if (error || !data) {
       return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 },
+        { success: false, error: "Trivia set not found" },
+        { status: 404 },
       );
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({
+      success: true,
+      data,
+    });
   } catch (error) {
+    console.error("API error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to update trivia set" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-
-    const { error } = await supabaseAdmin
-      .from("sets_trivia_multiple_choice")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to delete trivia set" },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 },
     );
   }

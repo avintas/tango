@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,11 +26,7 @@ export default function AIExtractionPromptsPage() {
     is_active: true,
   });
 
-  useEffect(() => {
-    fetchPrompts();
-  }, []);
-
-  const fetchPrompts = async () => {
+  const fetchPrompts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -58,7 +54,11 @@ export default function AIExtractionPromptsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedPrompt]);
+
+  useEffect(() => {
+    fetchPrompts();
+  }, [fetchPrompts]);
 
   const handleSelectPrompt = (prompt: AIExtractionPrompt) => {
     setSelectedPrompt(prompt);

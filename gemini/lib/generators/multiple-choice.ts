@@ -58,14 +58,26 @@ export async function generateMultipleChoice(
     }
 
     const finalData: TriviaQuestion[] = parsedResponse.items.map(
-      (item: any) => ({
-        question_type: "multiple-choice",
-        question_text: item.question_text || "",
-        correct_answer: item.correct_answer || "",
-        wrong_answers: item.wrong_answers || [],
-        explanation: item.explanation || "",
-        theme: item.theme || "",
-      }),
+      (item: any) => {
+        // Normalize difficulty: convert to capitalized format (Easy, Medium, Hard)
+        let difficulty: string | null = null;
+        if (item.difficulty) {
+          const diffLower = item.difficulty.toLowerCase().trim();
+          if (diffLower === "easy") difficulty = "Easy";
+          else if (diffLower === "medium") difficulty = "Medium";
+          else if (diffLower === "hard") difficulty = "Hard";
+        }
+
+        return {
+          question_type: "multiple-choice",
+          question_text: item.question_text || "",
+          correct_answer: item.correct_answer || "",
+          wrong_answers: item.wrong_answers || [],
+          explanation: item.explanation || "",
+          theme: item.theme || "",
+          difficulty: difficulty,
+        };
+      },
     );
 
     return {

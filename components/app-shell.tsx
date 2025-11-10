@@ -96,6 +96,15 @@ const contentLibrariesActions = [
   },
 ];
 
+const ideationActions = [
+  {
+    id: 1,
+    name: "Ideation",
+    href: "/cms/ideation",
+    initial: "I",
+  },
+];
+
 const processingActions = [
   {
     id: 0,
@@ -108,6 +117,12 @@ const processingActions = [
     name: "Build Trivia Set",
     href: "/cms/process-builders/build-trivia-set",
     initial: "🔧",
+  },
+  {
+    id: 2,
+    name: "Recipes",
+    href: "/cms/recipes",
+    initial: "📝",
   },
 ];
 
@@ -201,6 +216,26 @@ export default function AppShell({
                 </div>
                 <ul role="list" className="mt-2 space-y-1">
                   {libraryActions.map((action) => (
+                    <li key={action.name}>
+                      <Link
+                        href={action.href}
+                        className="group flex gap-x-3 rounded-md p-1 text-xs font-semibold text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                      >
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-[10px] font-medium text-gray-600 group-hover:text-gray-900">
+                          {action.initial}
+                        </span>
+                        <span className="truncate">{action.name}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+              <li>
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
+                  Ideation
+                </div>
+                <ul role="list" className="mt-2 space-y-1">
+                  {ideationActions.map((action) => (
                     <li key={action.name}>
                       <Link
                         href={action.href}

@@ -73,6 +73,9 @@ export default function PromptsLibraryPage() {
       sessionStorage.setItem("contentType", selectedPrompt.content_type);
     }
 
+    // Set flag to indicate we're returning from prompts library
+    sessionStorage.setItem("promptsLibraryReturn", "true");
+
     // Check for return path (set by the page that sent us here)
     const returnPath = sessionStorage.getItem("libraryReturnPath");
 
